@@ -1,0 +1,107 @@
+.capabilities {
+  position: relative;
+  margin-top: @space-10;
+}
+
+.capability-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.capability-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: @space-2;
+  padding-block: @space-6;
+  list-style: none;
+  outline-offset: @space-2;
+  will-change: transform, opacity;
+
+  @media (min-width: @bp-md) {
+    grid-template-columns: 6rem minmax(0, 1fr);
+    gap: @space-8;
+    padding-block: @space-8;
+  }
+
+  &__rule {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+    width: 100%;
+    height: 1px;
+    background: var(--foreground-10);
+    transform-origin: left center;
+    will-change: transform;
+  }
+
+  &__index {
+    margin: 0;
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    transition: color @transition-fast;
+  }
+
+  &__content {
+    display: grid;
+    grid-template-rows: auto auto;
+    gap: @space-3;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: clamp(1.5rem, 4vw, 2.75rem);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+    color: var(--foreground);
+    transition: color @transition-fast, transform @transition-base;
+  }
+
+  &__reveal {
+    overflow: hidden;
+  }
+
+  &__body {
+    margin: 0;
+    max-width: 34rem;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--muted);
+    will-change: transform, opacity;
+  }
+
+  &--active &__index,
+  &:focus-within &__index {
+    color: var(--accent);
+  }
+
+  &--active &__title,
+  &:focus-within &__title {
+    color: var(--accent);
+  }
+
+  @media (min-width: @bp-md) {
+    &--active &__title {
+      transform: translateX(@space-3);
+    }
+  }
+}
+
+// Hover reveals are unavailable on touch and suppressed for reduced motion, so
+// the supporting copy stays permanently visible there.
+@media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .capability-row__reveal {
+    height: auto !important;
+    overflow: visible;
+  }
+
+  .capability-row__body {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

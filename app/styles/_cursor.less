@@ -1,0 +1,50 @@
+.cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: @z-cursor;
+  pointer-events: none;
+  contain: layout style;
+
+  &__dot,
+  &__ring {
+    position: fixed;
+    top: 0;
+    left: 0;
+    border-radius: 50%;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    will-change: transform, opacity;
+  }
+
+  &__dot {
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+  }
+
+  &__ring {
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 1px solid var(--accent);
+  }
+}
+
+html[data-cursor="custom"] body.site-body {
+  cursor: none;
+}
+
+html[data-cursor="custom"] input,
+html[data-cursor="custom"] textarea,
+html[data-cursor="custom"] select {
+  cursor: auto;
+}
+
+@media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .cursor {
+    display: none;
+  }
+}

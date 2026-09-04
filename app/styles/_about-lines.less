@@ -1,0 +1,90 @@
+.about-lines {
+  width: 100vw;
+  margin-top: @space-12;
+  margin-left: calc(50% - 50vw);
+  padding-block: @space-8;
+  overflow: hidden;
+
+  @media (min-width: @bp-md) {
+    margin-top: @space-24;
+  }
+
+  &__track {
+    overflow: hidden;
+    margin-bottom: @space-3;
+  }
+
+  &__row {
+    display: flex;
+    white-space: nowrap;
+    will-change: transform;
+
+    span {
+      padding-right: @space-8;
+      font-size: clamp(1.5rem, 5vw, 3rem);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: transparent;
+      background: linear-gradient(
+        90deg,
+        var(--muted) 0%,
+        color-mix(in srgb, var(--accent) 50%, var(--accent-warm) 50%) 50%,
+        var(--muted) 100%
+      );
+      background-clip: text;
+      -webkit-background-clip: text;
+    }
+
+    &--reverse span {
+      background: linear-gradient(
+        270deg,
+        var(--muted) 0%,
+        color-mix(in srgb, var(--accent) 50%, var(--accent-warm) 50%) 50%,
+        var(--muted) 100%
+      );
+      background-clip: text;
+      -webkit-background-clip: text;
+    }
+  }
+
+  &__static {
+    margin: 0 0 @space-3;
+    padding-inline: @space-4;
+    font-size: clamp(1rem, 3vw, 1.5rem);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-align: center;
+    color: var(--muted);
+  }
+}
+
+[data-theme="dark"] .about-lines {
+  &__row span,
+  &__row--reverse span {
+    background: linear-gradient(
+      90deg,
+      rgba(244, 244, 245, 0.25) 0%,
+      var(--foreground) 50%,
+      rgba(244, 244, 245, 0.25) 100%
+    );
+    background-clip: text;
+    -webkit-background-clip: text;
+  }
+
+  &__row--reverse span {
+    background: linear-gradient(
+      270deg,
+      rgba(244, 244, 245, 0.25) 0%,
+      var(--foreground) 50%,
+      rgba(244, 244, 245, 0.25) 100%
+    );
+    background-clip: text;
+    -webkit-background-clip: text;
+  }
+
+  &__static {
+    color: var(--foreground);
+  }
+}

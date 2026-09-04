@@ -1,0 +1,34 @@
+// The section surface lives on a pseudo-element rather than the section itself.
+// `backdrop-filter` on the section would make it a containing block for
+// `position: fixed`, which silently breaks ScrollTrigger's fixed-mode pinning
+// for any descendant (the Selected Work reel).
+.section {
+  position: relative;
+  scroll-margin-top: @space-8;
+  padding-block: @space-24;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: color-mix(in srgb, var(--background) 60%, transparent);
+    backdrop-filter: blur(4px);
+  }
+
+  @media (min-width: @bp-md) {
+    padding-block: @space-32;
+  }
+}
+
+.section--carousel {
+  overflow: visible;
+}
+
+.section--pinned {
+  padding-bottom: 0;
+
+  @media (min-width: @bp-md) {
+    padding-bottom: 0;
+  }
+}

@@ -1,0 +1,260 @@
+// The dots trigger and its sheet are the small-screen navigation only. From
+// @bp-nav up, the centred tab bar takes over.
+.site-nav {
+  position: fixed;
+  z-index: @z-nav;
+  right: calc(1.25rem + var(--safe-right));
+  bottom: calc(1.25rem + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: @space-3;
+
+  @media (min-width: @bp-nav) {
+    display: none;
+  }
+
+  &__overlay {
+    position: fixed;
+    inset: 0;
+    z-index: @z-nav-overlay;
+    border: none;
+    padding: 0;
+    background: color-mix(in srgb, var(--background) 60%, transparent);
+    backdrop-filter: blur(4px);
+    cursor: pointer;
+  }
+
+  &__menu {
+    width: 14rem;
+    margin-bottom: @space-1;
+    transform-origin: bottom right;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: @space-1;
+    margin: 0;
+    padding: @space-2;
+    list-style: none;
+  }
+
+  &__link {
+    display: flex;
+    min-height: 2.75rem;
+    align-items: center;
+    padding: @space-3 @space-4;
+    border-radius: 0.75rem;
+    text-decoration: none;
+    color: var(--foreground);
+    transition: background @transition-fast, color @transition-fast;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--foreground-5);
+      color: var(--accent);
+    }
+  }
+
+  &__appearance {
+    margin-top: @space-1;
+    padding-top: @space-1;
+    border-top: 1px solid var(--foreground-10);
+    list-style: none;
+  }
+
+  &__appearance-label {
+    margin: 0;
+    padding: @space-2 @space-4;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  &__trigger {
+    display: flex;
+    width: 3.5rem;
+    height: 3.5rem;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    padding: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--foreground);
+    cursor: pointer;
+    transition: transform @transition-fast;
+
+    &:hover {
+      transform: scale(1.05);
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
+  &__trigger-inner {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.theme-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: @space-3;
+  padding: @space-3 @space-4;
+  border: none;
+  border-radius: 0.75rem;
+  background: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: background @transition-fast;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--foreground-5);
+  }
+
+  &__icon {
+    display: flex;
+    width: 1.25rem;
+    height: 1.25rem;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+  }
+}
+
+// Centred desktop tab bar. Shares the audio player's glass pill recipe so the
+// two bottom controls read as siblings. Hidden below @bp-nav, where the dots
+// sheet is the only navigation.
+.nav-tabs {
+  position: fixed;
+  z-index: @z-nav;
+  bottom: calc(1.25rem + var(--safe-bottom));
+  left: 50%;
+  display: none;
+  align-items: center;
+  gap: @space-3;
+  transform: translateX(-50%);
+
+  @media (min-width: @bp-nav) {
+    display: flex;
+  }
+
+  &__bar {
+    display: flex;
+    align-items: center;
+    padding: @space-2;
+    border-radius: 9999px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 10px 30px var(--glass-shadow);
+  }
+
+  &__list {
+    display: flex;
+    align-items: center;
+    gap: @space-1;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__item {
+    list-style: none;
+  }
+
+  &__button {
+    position: relative;
+    display: inline-flex;
+    min-height: 2.25rem;
+    align-items: center;
+    padding: 0 @space-4;
+    border: 0;
+    border-radius: 9999px;
+    background: none;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.8125rem;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color @transition-fast;
+
+    &:hover {
+      color: var(--foreground);
+    }
+
+    &--active {
+      color: var(--accent);
+    }
+  }
+
+  &__indicator {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    display: block;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    background: var(--foreground-5);
+  }
+
+  &__label {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+.theme-orb {
+  display: flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: transform @transition-fast, color @transition-fast;
+
+  &:hover {
+    color: var(--accent);
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  &__inner {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+      width: 1.125rem;
+      height: 1.125rem;
+    }
+  }
+}

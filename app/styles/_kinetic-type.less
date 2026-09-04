@@ -1,0 +1,40 @@
+.kinetic {
+  margin: 0;
+
+  &__line {
+    margin: 0;
+    overflow: hidden;
+    font-size: clamp(1.75rem, 6vw, 4.25rem);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.08;
+    color: var(--foreground);
+  }
+
+  &__word {
+    display: inline-block;
+    will-change: transform, opacity;
+  }
+
+  &--accent &__line:nth-child(even) {
+    background: var(--hero-gradient);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+}
+
+.about-statement {
+  margin-top: @space-10;
+}
+
+.about-support {
+  max-width: 44rem;
+  margin-top: @space-10;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kinetic__line {
+    overflow: visible;
+  }
+}

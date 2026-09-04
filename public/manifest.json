@@ -1,0 +1,10 @@
+{
+  "name": "SHUX — Shan Gray",
+  "short_name": "SHUX",
+  "description": "Personal portfolio by Shan Gray — interaction design and front-end craft",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0b",
+  "theme_color": "#0a0a0b",
+  "orientation": "portrait-primary"
+}

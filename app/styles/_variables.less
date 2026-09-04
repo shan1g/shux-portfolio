@@ -1,0 +1,40 @@
+@bp-sm: 640px;
+@bp-md: 768px;
+@bp-nav: 990px;
+@bp-lg: 1024px;
+
+@space-1: 0.25rem;
+@space-2: 0.5rem;
+@space-3: 0.75rem;
+@space-4: 1rem;
+@space-5: 1.25rem;
+@space-6: 1.5rem;
+@space-8: 2rem;
+@space-10: 2.5rem;
+@space-12: 3rem;
+@space-24: 6rem;
+@space-32: 8rem;
+
+@ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+@transition-fast: 0.2s ease;
+@transition-base: 0.35s @ease-out-soft;
+
+@z-ambient: -10;
+@z-content: 20;
+@z-hero: 10;
+@z-nav: 50;
+@z-nav-overlay: 40;
+@z-audio: 35;
+@z-work-detail: 60;
+@z-skip: 100;
+@z-cursor: 150;
+@z-preloader: 200;
+
+:root {
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --hero-type-size: clamp(3.5rem, 14vw, 11rem);
+  --hero-type-tracking: 0.2em;
+}

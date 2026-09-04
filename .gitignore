@@ -19,10 +19,15 @@
 
 # production
 /build
+app/styles/main.css
 
 # misc
 .DS_Store
 *.pem
+
+# editors
+.idea/
+.vscode/
 
 # debug
 npm-debug.log*

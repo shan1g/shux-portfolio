@@ -4,15 +4,24 @@ import { LiquidGlassPanel } from "@/components/glass/LiquidGlassPanel";
 import { useTheme } from "./ThemeProvider";
 
 export function ThemeToggleOrb() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, resolved, toggleTheme } = useTheme();
   const isDark = theme === "dark";
 
+  // Nothing theme-dependent may render until the theme is resolved after mount,
+  // otherwise the server markup and the first client render disagree. The orb
+  // has a fixed size in CSS, so holding the icon back costs no layout shift.
   return (
     <button
       type="button"
       onClick={toggleTheme}
-      aria-pressed={isDark}
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      aria-pressed={resolved ? isDark : undefined}
+      aria-label={
+        resolved
+          ? isDark
+            ? "Switch to light mode"
+            : "Switch to dark mode"
+          : "Toggle colour theme"
+      }
       className="theme-orb"
     >
       <LiquidGlassPanel
@@ -22,7 +31,7 @@ export function ThemeToggleOrb() {
         className="liquid-glass-panel--circle"
       >
         <span className="theme-orb__inner" aria-hidden="true">
-          {isDark ? (
+          {!resolved ? null : isDark ? (
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"

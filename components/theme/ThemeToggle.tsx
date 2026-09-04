@@ -3,19 +3,27 @@
 import { useTheme } from "./ThemeProvider";
 
 export function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, resolved, toggleTheme } = useTheme();
   const isDark = theme === "dark";
 
+  // Same constraint as ThemeToggleOrb: no theme-dependent markup before the
+  // theme is resolved after mount, or server and client renders disagree.
   return (
     <button
       type="button"
       onClick={toggleTheme}
-      aria-pressed={isDark}
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      aria-pressed={resolved ? isDark : undefined}
+      aria-label={
+        resolved
+          ? isDark
+            ? "Switch to light mode"
+            : "Switch to dark mode"
+          : "Toggle colour theme"
+      }
       className="theme-toggle"
     >
       <span className="theme-toggle__icon" aria-hidden="true">
-        {isDark ? (
+        {!resolved ? null : isDark ? (
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
@@ -42,7 +50,7 @@ export function ThemeToggle() {
           </svg>
         )}
       </span>
-      <span>{isDark ? "Light mode" : "Dark mode"}</span>
+      <span>{resolved ? (isDark ? "Light mode" : "Dark mode") : "Theme"}</span>
     </button>
   );
 }

@@ -52,6 +52,15 @@
   }
 }
 
+// Applied twice: once as the `prefers-color-scheme` default (guarded so an
+// explicit dark choice still wins) and once for an explicit light choice. See
+// `_theme.less` for why the theme resolves in CSS rather than from a script.
+@media (prefers-color-scheme: light) {
+  html:not([data-theme="dark"]) .hero-glass-fractal {
+    opacity: 0.5;
+  }
+}
+
 [data-theme="light"] .hero-glass-fractal {
   opacity: 0.5;
 }

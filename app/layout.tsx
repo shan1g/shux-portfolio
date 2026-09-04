@@ -37,17 +37,6 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-const themeScript = `
-(function() {
-  try {
-    var stored = localStorage.getItem('theme');
-    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    var theme = stored === 'light' || stored === 'dark' ? stored : (prefersDark ? 'dark' : 'light');
-    document.documentElement.setAttribute('data-theme', theme);
-  } catch (e) {}
-})();
-`;
-
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -55,10 +44,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`site-root ${geistSans.variable} ${geistMono.variable}`}
       suppressHydrationWarning
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
       <body className="site-body">
+        {/*
+          No theme bootstrap script here on purpose. Every <script> inside the
+          React tree — raw or via next/script's beforeInteractive — gets
+          re-rendered on the client, where scripts never execute, which is the
+          console warning. The first-paint theme is resolved in CSS from
+          `prefers-color-scheme` instead (see app/styles/_theme.less), and
+          ThemeProvider writes `data-theme` only as an explicit override.
+        */}
         <a href="#about" className="skip-link">
           Skip to content
         </a>

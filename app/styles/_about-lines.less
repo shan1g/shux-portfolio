@@ -1,3 +1,36 @@
+// The dark treatment is applied twice: once as the `prefers-color-scheme`
+// default (guarded so an explicit light choice still wins) and once for an
+// explicit dark choice. See `_theme.less` for why the theme resolves in CSS
+// rather than from a bootstrap script.
+.about-lines-dark() {
+  &__row span,
+  &__row--reverse span {
+    background: linear-gradient(
+      90deg,
+      rgba(244, 244, 245, 0.25) 0%,
+      var(--foreground) 50%,
+      rgba(244, 244, 245, 0.25) 100%
+    );
+    background-clip: text;
+    -webkit-background-clip: text;
+  }
+
+  &__row--reverse span {
+    background: linear-gradient(
+      270deg,
+      rgba(244, 244, 245, 0.25) 0%,
+      var(--foreground) 50%,
+      rgba(244, 244, 245, 0.25) 100%
+    );
+    background-clip: text;
+    -webkit-background-clip: text;
+  }
+
+  &__static {
+    color: var(--foreground);
+  }
+}
+
 .about-lines {
   width: 100vw;
   margin-top: @space-12;
@@ -60,31 +93,12 @@
   }
 }
 
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) .about-lines {
+    .about-lines-dark();
+  }
+}
+
 [data-theme="dark"] .about-lines {
-  &__row span,
-  &__row--reverse span {
-    background: linear-gradient(
-      90deg,
-      rgba(244, 244, 245, 0.25) 0%,
-      var(--foreground) 50%,
-      rgba(244, 244, 245, 0.25) 100%
-    );
-    background-clip: text;
-    -webkit-background-clip: text;
-  }
-
-  &__row--reverse span {
-    background: linear-gradient(
-      270deg,
-      rgba(244, 244, 245, 0.25) 0%,
-      var(--foreground) 50%,
-      rgba(244, 244, 245, 0.25) 100%
-    );
-    background-clip: text;
-    -webkit-background-clip: text;
-  }
-
-  &__static {
-    color: var(--foreground);
-  }
+  .about-lines-dark();
 }

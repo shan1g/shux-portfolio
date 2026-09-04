@@ -20,6 +20,8 @@ export function SiteNav() {
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const firstLinkRef = useRef<HTMLAnchorElement>(null);
+  // Section a link asked for, scrolled to once the menu's scroll lock is gone.
+  const pendingHrefRef = useRef<string | null>(null);
 
   const close = useCallback(() => setOpen(false), []);
 
@@ -60,11 +62,27 @@ export function SiteNav() {
     return () => document.removeEventListener("focusin", onFocusIn);
   }, [open, close]);
 
-  const handleNavClick = (href: string) => {
-    close();
-    const id = href.replace("#", "");
-    const el = document.getElementById(id);
+  // Opening the menu locks scrolling (`overflow: hidden` on <body> plus
+  // `pauseScroll()`), and that lock is only released by the cleanup of the
+  // `open` effect above — which React runs *after* a click handler returns. A
+  // stopped Lenis silently drops `scrollTo` and `overflow: hidden` blocks the
+  // `scrollIntoView` fallback, so scrolling from inside the handler did
+  // nothing. The target is therefore recorded and the scroll deferred to an
+  // effect, which runs after the lock has been released.
+  useEffect(() => {
+    if (open) return;
+
+    const href = pendingHrefRef.current;
+    if (!href) return;
+    pendingHrefRef.current = null;
+
+    const el = document.getElementById(href.replace("#", ""));
     if (el) scrollToTarget(el, { immediate: reducedMotion });
+  }, [open, reducedMotion]);
+
+  const handleNavClick = (href: string) => {
+    pendingHrefRef.current = href;
+    close();
   };
 
   return (

@@ -30,7 +30,9 @@ export function ScrollHeroLayout({ children }: { children: React.ReactNode }) {
   const cueRef = useRef<HTMLDivElement>(null);
   const glassFractalRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<HeroGlassRenderer | null>(null);
-  const shapeStateRef = useRef<HeroShapeState>(0);
+  // Seeded to the orb: the page lands on the orb endpoint, so the first
+  // `apply()` must not read as a shape change.
+  const shapeStateRef = useRef<HeroShapeState>(1);
   const reducedMotion = useReducedMotion();
 
   useEffect(() => {
@@ -70,7 +72,9 @@ export function ScrollHeroLayout({ children }: { children: React.ReactNode }) {
       }
 
       if (glassFractal) {
-        tl.to(glassFractal, { opacity: 0.35, ease: "none", duration: 1 }, 0);
+        // The morph now completes past the hero pin, so the object has to stay
+        // legible after the hero fade rather than dropping to 0.35.
+        tl.to(glassFractal, { opacity: 0.55, ease: "none", duration: 1 }, 0);
       }
 
       const chapters = gsap.utils.toArray<HTMLElement>("[data-hero-chapter]");

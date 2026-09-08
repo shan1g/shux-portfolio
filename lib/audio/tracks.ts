@@ -6,23 +6,18 @@ export type AmbientTrack = {
 
 export const ambientTracks: AmbientTrack[] = [
   {
-    title: "Till The Light Shines",
+    title: "Summer Rains",
     artist: "Shan .G.",
-    src: "/audio/till-the-light-shines.mp3",
+    src: "/audio/Shan%20.G.%20-%20Summer%20Rains.mp3",
   },
   {
-    title: "Mars",
+    title: "Choosing Love",
     artist: "Shan .G.",
-    src: "/audio/mars.mp3",
+    src: "/audio/Track%20504%20-%20Choosing%20Love.mp3",
   },
   {
-    title: "My Dream",
-    artist: "Shan .G.",
-    src: "/audio/my-dream.mp3",
-  },
-  {
-    title: "Memories Of Lost",
-    artist: "Shan .G.",
-    src: "/audio/memories-of-lost.mp3",
+    title: "7 Days (Shan G)",
+    artist: "Patrice Baumel & Caitlin Devlin",
+    src: "/audio/Track%20574%20-%20Patrice%20Baumel%20%26%20Caitlin%20Devlin%20-%207%20Days%20(Shan%20G).mp3",
   },
 ];

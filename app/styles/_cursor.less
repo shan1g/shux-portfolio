@@ -17,19 +17,24 @@
     visibility: hidden;
     opacity: 0;
     transition: opacity 0.25s ease;
-    will-change: transform, opacity;
   }
 
   &__dot {
     width: 6px;
     height: 6px;
     background: var(--accent);
+    will-change: transform, opacity;
   }
 
+  // The ring is authored at its hover size and scaled *down* at rest, so every
+  // state is a downscale of the rasterised border rather than an upscale — the
+  // upscale is what read as blur on hover. `will-change` intentionally omits
+  // `transform`: promoting the layer caches the raster at the resting scale.
   &__ring {
-    width: 2.25rem;
-    height: 2.25rem;
-    border: 1px solid var(--accent);
+    width: 4.25rem;
+    height: 4.25rem;
+    border: 2px solid var(--accent);
+    will-change: opacity;
   }
 }
 

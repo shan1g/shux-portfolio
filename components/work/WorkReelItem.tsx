@@ -1,21 +1,16 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import Image from "next/image";
 import type { Project } from "@/lib/projects";
-import { useScrambleReveal } from "@/hooks/useScrambleText";
 
 type WorkReelItemProps = {
   project: Project;
-  index: number;
   onOpen: (project: Project, media: HTMLElement) => void;
 };
 
-export function WorkReelItem({ project, index, onOpen }: WorkReelItemProps) {
+export function WorkReelItem({ project, onOpen }: WorkReelItemProps) {
   const mediaRef = useRef<HTMLDivElement>(null);
-  const [hovered, setHovered] = useState(false);
-
-  const label = useScrambleReveal({ text: project.title, active: hovered });
 
   return (
     <li className="work-reel__item" data-work-item>
@@ -23,10 +18,6 @@ export function WorkReelItem({ project, index, onOpen }: WorkReelItemProps) {
         type="button"
         className="work-reel__button"
         aria-label={`Open case study: ${project.title}`}
-        onPointerEnter={() => setHovered(true)}
-        onPointerLeave={() => setHovered(false)}
-        onFocus={() => setHovered(true)}
-        onBlur={() => setHovered(false)}
         onClick={() => {
           if (mediaRef.current) onOpen(project, mediaRef.current);
         }}
@@ -47,12 +38,6 @@ export function WorkReelItem({ project, index, onOpen }: WorkReelItemProps) {
             </span>
           )}
           <span className="work-reel__scrim" aria-hidden="true" />
-          <span className="work-reel__index">
-            {String(index + 1).padStart(3, "0")}
-          </span>
-          <span className="work-reel__scramble" aria-hidden="true">
-            {label}
-          </span>
         </div>
 
         <div className="work-reel__meta">

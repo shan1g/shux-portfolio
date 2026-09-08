@@ -40,6 +40,12 @@ export const HERO_FRACTAL_CAMERA = {
   maxMouseRotation: 5,
   mouseLerp: 0.02,
 } satisfies HeroFractalCamera;
+
+// The inner mesh is studio-lit again (see `hero-fractal-mesh.wgsl`), so every
+// field here is read: roughness selects the prefiltered reflection level and
+// specularStrength drives the highlight. These are the vgpu glass-fractal
+// example's authored values — the orb's specular of 1.6 against a near-white
+// base is what produces its liquid-chrome read.
 export const HERO_FRACTAL_MATERIAL = {
   baseColor: [71 / 255, 71 / 255, 71 / 255],
   roughness: 0.18,
@@ -58,7 +64,10 @@ export const HERO_FRACTAL_GLASS = {
   fractalScale: 0.72,
   orbScale: 0.6,
   orbOffsetY: 0.08,
-  sphereMix: 0,
+  // The page lands on the orb endpoint, so the very first frame — painted
+  // before the document ScrollTrigger's immediate snap lands — must already be
+  // the orb rather than flashing the fractal.
+  sphereMix: 1,
   ior: 1.149,
   reflectionStrength: 0.71,
   backOpacity: 0.19,

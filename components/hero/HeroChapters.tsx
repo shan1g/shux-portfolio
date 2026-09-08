@@ -36,7 +36,6 @@ export function HeroChapters({ reducedMotion = false }: HeroChaptersProps) {
     >
       {chapters.map((chapter) => (
         <li key={chapter.index} className="hero-chapter" data-hero-chapter>
-          <p className="hero-chapter__index">[{chapter.index}]</p>
           <p className="hero-chapter__title">{chapter.title}</p>
           <p className="hero-chapter__body">{chapter.body}</p>
         </li>

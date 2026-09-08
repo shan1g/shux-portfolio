@@ -149,7 +149,6 @@ export function CapabilityList() {
             tabIndex={0}
           >
             <span className="capability-row__rule" data-capability-rule />
-            <p className="capability-row__index">[{capability.index}]</p>
             <div className="capability-row__content">
               <h3 className="capability-row__title">{capability.title}</h3>
               <div className="capability-row__reveal" data-capability-reveal>

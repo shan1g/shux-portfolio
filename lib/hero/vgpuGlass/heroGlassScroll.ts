@@ -1,9 +1,14 @@
-/** Complete fractal → orb → fractal morph cycles across the whole document. */
-export const PAGE_MORPH_CYCLES = 3;
+/**
+ * Document progress at which the shape endpoint flips from orb to fractal. The
+ * page lands on the orb and has fully become the fractal by the time the
+ * visitor is a little under halfway down, so the fractal — the more detailed of
+ * the two endpoints — is on screen for the majority of the scroll.
+ */
+export const SHAPE_CROSSOVER = 0.42;
 
 /**
- * Deadband, in phase units, either side of each square-wave edge. Sub-pixel
- * scroll jitter at a boundary would otherwise flip the endpoint every frame and
+ * Deadband, in progress units, either side of the crossover. Sub-pixel scroll
+ * jitter at the boundary would otherwise flip the endpoint every frame and
  * restart the eased morph before it could finish.
  */
 export const SHAPE_STATE_HYSTERESIS = 0.04;
@@ -12,7 +17,7 @@ export type HeroShapeState = 0 | 1;
 
 /**
  * Map full-document scroll progress (0–1) to a morph ENDPOINT
- * (0 = fractal, 1 = orb).
+ * (1 = orb, 0 = fractal).
  *
  * The vgpu glass-fractal example never scrubs sphereMix: it drives the shape to
  * one of the two authored endpoints and eases the transition over a fixed
@@ -21,21 +26,18 @@ export type HeroShapeState = 0 | 1;
  * transition — mapping progress straight onto sphereMix flattens that easing
  * back out into a linear slide.
  *
- * The wave keeps the same period as the previous triangle mapping, so the number
- * of transitions across the document is unchanged.
+ * This is a single monotonic edge rather than the previous repeating square
+ * wave: one orb -> fractal journey across the page instead of six alternating
+ * transitions.
  */
 export function pageProgressToShapeState(
   progress: number,
-  previous: HeroShapeState = 0,
-  cycles: number = PAGE_MORPH_CYCLES,
+  previous: HeroShapeState = 1,
+  crossover: number = SHAPE_CROSSOVER,
 ): HeroShapeState {
   const t = Math.min(1, Math.max(0, progress));
-  const phase = (t * cycles) % 1;
-  if (previous === 0) {
-    return phase > 0.5 + SHAPE_STATE_HYSTERESIS &&
-      phase < 1 - SHAPE_STATE_HYSTERESIS
-      ? 1
-      : 0;
+  if (previous === 1) {
+    return t > crossover + SHAPE_STATE_HYSTERESIS ? 0 : 1;
   }
-  return phase < 0.5 - SHAPE_STATE_HYSTERESIS ? 0 : 1;
+  return t < crossover - SHAPE_STATE_HYSTERESIS ? 1 : 0;
 }

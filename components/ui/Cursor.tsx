@@ -5,6 +5,11 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 const MAGNETIC_SELECTOR = "a, button, [data-cursor-magnetic]";
 const RING_LERP = 0.18;
+const RING_SCALE_REST = 0.53;
+const RING_SCALE_HOVER = 1;
+const RING_SCALE_PRESS = 0.42;
+const DOT_OPACITY_REST = "1";
+const DOT_OPACITY_MAGNETIC = "0.4";
 
 export function Cursor() {
   const dotRef = useRef<HTMLDivElement>(null);
@@ -35,9 +40,10 @@ export function Cursor() {
     let pointerY = window.innerHeight * 0.5;
     let ringX = pointerX;
     let ringY = pointerY;
-    let ringScale = 1;
-    let targetScale = 1;
+    let ringScale = RING_SCALE_REST;
+    let targetScale = RING_SCALE_REST;
     let visible = false;
+    let magnetic = false;
     let frame = 0;
 
     const render = () => {
@@ -53,10 +59,16 @@ export function Cursor() {
 
     frame = requestAnimationFrame(render);
 
+    // The dot dims over interactive targets. Both that dim and show/hide write
+    // `opacity`, so the resting value is derived rather than assumed —
+    // otherwise leaving the window mid-hover could strand the dot at 0.4.
+    const dotOpacity = () =>
+      magnetic ? DOT_OPACITY_MAGNETIC : DOT_OPACITY_REST;
+
     const show = () => {
       if (visible) return;
       visible = true;
-      dot.style.opacity = "1";
+      dot.style.opacity = dotOpacity();
       ring.style.opacity = "1";
       dot.style.visibility = "visible";
       ring.style.visibility = "visible";
@@ -72,21 +84,23 @@ export function Cursor() {
       if (event.pointerType && event.pointerType !== "mouse") return;
       pointerX = event.clientX;
       pointerY = event.clientY;
-      show();
 
       const target = event.target as Element | null;
-      const magnetic =
-        target instanceof Element ? target.closest(MAGNETIC_SELECTOR) : null;
-      targetScale = magnetic ? 1.9 : 1;
-      dot.style.opacity = magnetic ? "0.4" : "1";
+      magnetic = Boolean(
+        target instanceof Element ? target.closest(MAGNETIC_SELECTOR) : null,
+      );
+      targetScale = magnetic ? RING_SCALE_HOVER : RING_SCALE_REST;
+
+      show();
+      if (visible) dot.style.opacity = dotOpacity();
     };
 
     const onDown = () => {
-      targetScale = 0.8;
+      targetScale = RING_SCALE_PRESS;
     };
 
     const onUp = () => {
-      targetScale = 1;
+      targetScale = magnetic ? RING_SCALE_HOVER : RING_SCALE_REST;
     };
 
     window.addEventListener("pointermove", onMove, {

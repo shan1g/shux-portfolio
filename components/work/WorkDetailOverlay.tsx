@@ -158,9 +158,6 @@ export function WorkDetailOverlay({
 
       <div className="work-detail__panel">
         <header className="work-detail__bar">
-          <p className="work-detail__eyebrow" data-overlay-fade>
-            Case study
-          </p>
           <button
             ref={closeRef}
             type="button"

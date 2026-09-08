@@ -20,7 +20,7 @@
   will-change: transform, opacity;
 
   @media (min-width: @bp-md) {
-    grid-template-columns: 6rem minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: @space-8;
     padding-block: @space-8;
   }
@@ -35,15 +35,6 @@
     background: var(--foreground-10);
     transform-origin: left center;
     will-change: transform;
-  }
-
-  &__index {
-    margin: 0;
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
-    font-size: 0.75rem;
-    letter-spacing: 0.18em;
-    color: var(--muted);
-    transition: color @transition-fast;
   }
 
   &__content {
@@ -73,11 +64,6 @@
     line-height: 1.6;
     color: var(--muted);
     will-change: transform, opacity;
-  }
-
-  &--active &__index,
-  &:focus-within &__index {
-    color: var(--accent);
   }
 
   &--active &__title,

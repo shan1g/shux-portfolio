@@ -75,9 +75,10 @@ export const projects: Project[] = [
     title: "KeyboardLearner",
     description:
       "Turn keyboard mashing into something fun to learn — built for curious kids and patient parents.",
-    href: "https://github.com/shan1g/KeyboardLearner",
+    href: "https://keyboard-learner.vercel.app/",
     tags: ["TypeScript", "Education", "Side project"],
     source: "github",
+    image: "/work/keyboard-learner.jpg",
   },
 ];
 

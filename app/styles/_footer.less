@@ -81,14 +81,11 @@
   background: color-mix(in srgb, var(--background) 70%, transparent);
   backdrop-filter: blur(6px);
 
+  // The Index and Elsewhere link columns were removed, so the brand block is
+  // the only child left and the three-column desktop grid no longer applies.
   &__inner {
     display: grid;
     gap: @space-10;
-
-    @media (min-width: @bp-md) {
-      grid-template-columns: 2fr 1fr 1fr;
-      gap: @space-8;
-    }
   }
 
   &__brand {
@@ -111,43 +108,6 @@
     font-size: 0.9375rem;
     line-height: 1.6;
     color: var(--muted);
-  }
-
-  &__group-label {
-    margin: 0 0 @space-4;
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
-    font-size: 0.6875rem;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--accent);
-  }
-
-  &__list {
-    display: flex;
-    flex-direction: column;
-    gap: @space-2;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-
-    li {
-      list-style: none;
-    }
-  }
-
-  &__link {
-    display: inline-flex;
-    min-height: 1.75rem;
-    align-items: center;
-    font-size: 0.9375rem;
-    text-decoration: none;
-    color: var(--muted);
-    transition: color @transition-fast;
-
-    &:hover,
-    &:focus-visible {
-      color: var(--accent);
-    }
   }
 
   &__base {

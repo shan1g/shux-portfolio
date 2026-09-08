@@ -156,14 +156,6 @@
   text-align: center;
   will-change: transform, opacity;
 
-  &__index {
-    margin: 0;
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
-    font-size: 0.75rem;
-    letter-spacing: 0.18em;
-    color: var(--accent);
-  }
-
   &__title {
     margin: 0;
     font-size: clamp(1.5rem, 5vw, 2.5rem);
@@ -173,12 +165,17 @@
     color: var(--foreground);
   }
 
+  // The chapter copy sits directly over the WebGPU glass layer, so `--muted`
+  // lost too much contrast against the moving backdrop. Full `--foreground`
+  // (near-black in light, near-white in dark) plus a slightly heavier weight
+  // keeps it readable at every point in the morph.
   &__body {
     max-width: 34rem;
     margin: 0;
-    font-size: 1rem;
+    font-size: 1.0625rem;
+    font-weight: 500;
     line-height: 1.6;
-    color: var(--muted);
+    color: var(--foreground);
   }
 }
 
@@ -203,9 +200,10 @@
   &__label {
     font-family: var(--font-geist-mono), ui-monospace, monospace;
     font-size: 0.6875rem;
+    font-weight: 500;
     letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: var(--muted);
+    color: var(--foreground);
   }
 
   &__rail {

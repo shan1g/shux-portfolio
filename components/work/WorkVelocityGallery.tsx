@@ -177,11 +177,10 @@ export function WorkVelocityGallery() {
       <div ref={scrollRef} className="work-reel-scroll">
         <div ref={stickyRef} className="work-reel-sticky">
           <ul ref={trackRef} className="work-reel">
-            {projects.map((project, index) => (
+            {projects.map((project) => (
               <WorkReelItem
                 key={project.title}
                 project={project}
-                index={index}
                 onOpen={openDetail}
               />
             ))}

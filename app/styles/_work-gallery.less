@@ -98,29 +98,6 @@
     pointer-events: none;
   }
 
-  &__index {
-    position: absolute;
-    top: @space-3;
-    left: @space-3;
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
-    font-size: 0.6875rem;
-    letter-spacing: 0.16em;
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
-  }
-
-  &__scramble {
-    position: absolute;
-    right: @space-3;
-    bottom: @space-3;
-    left: @space-3;
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
-    font-size: 0.75rem;
-    line-height: 1.4;
-    color: var(--accent);
-    pointer-events: none;
-  }
-
   &__meta {
     display: flex;
     flex-direction: column;
@@ -252,24 +229,16 @@
     }
   }
 
+  // Only the close button remains in the bar now that the eyebrow is gone.
   &__bar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: @space-4;
 
     @media (min-width: @bp-lg) {
       grid-column: 1 / -1;
     }
-  }
-
-  &__eyebrow {
-    margin: 0;
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
-    font-size: 0.6875rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--accent);
   }
 
   &__close {

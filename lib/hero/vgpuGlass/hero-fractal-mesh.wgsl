@@ -12,6 +12,11 @@ import {
   sampleHeroEnvironmentLevel,
 } from "./hero-glass-environment.wgsl";
 
+// Studio-lit inner mesh, as in the vgpu glass-fractal example: prefiltered
+// cubemap diffuse, a roughness-selected specular lobe with a fresnel term, and
+// a grazing sheen. This is what gives the orb its depth and highlights — the
+// earlier flat lambert variant read as a paper cut-out because none of these
+// terms varied across the surface.
 const RUBBER_F0 = vec3f(0.028);
 
 struct SoftRubberMaterial {

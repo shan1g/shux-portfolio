@@ -7,10 +7,20 @@
 }
 
 .work-shelf {
-  --shelf-card-w: min(68vw, 19rem);
+  // Mobile: the front card spans the screen width less a 1rem gutter, capped
+  // by height so wide tablets still clear the credits panel.
+  --shelf-card-w: min(calc(100vw - 2rem), 56svh);
   // Where the front plane sits; the line rises up and right from here.
   --shelf-anchor-x: 50%;
-  --shelf-anchor-y: 52%;
+  --shelf-anchor-y: 46%;
+  // Line geometry, read by WorkVelocityGallery on resize. Steps are in card
+  // widths: how far the next plane sits right, up and into the distance.
+  // Turn is the front plane's yaw in degrees. Larger steps leave more room
+  // between planes for the wave and exit animations.
+  --shelf-step-x: 0.74;
+  --shelf-step-y: 0.14;
+  --shelf-step-z: 0.85;
+  --shelf-turn: 4;
   // The audio pill, menu button and tab bar are fixed 1.25rem from the
   // bottom. Shelf UI starts above them so the controls are not covered.
   --shelf-chrome: calc(5rem + var(--safe-bottom));
@@ -31,14 +41,20 @@
   // Short phones: the credits panel rises into the stage, so shrink and lift
   // the front plane to keep it clear of the glass. The md block below wins.
   @media (max-height: 700px) {
-    --shelf-card-w: min(68vw, 19rem, 50dvh);
-    --shelf-anchor-y: 45%;
+    --shelf-card-w: min(calc(100vw - 2rem), 46svh);
+    --shelf-anchor-y: 42%;
   }
 
+  // Desktop: larger planes, and wider steps along the line so each plane has
+  // room to breathe and for the wave and exit to play out.
   @media (min-width: @bp-md) {
-    --shelf-card-w: min(30vw, 27rem);
-    --shelf-anchor-x: 60%;
-    --shelf-anchor-y: 56%;
+    --shelf-card-w: min(38vw, 34rem, 72vh);
+    --shelf-anchor-x: 62%;
+    --shelf-anchor-y: 54%;
+    --shelf-step-x: 0.82;
+    --shelf-step-y: 0.24;
+    --shelf-step-z: 1.15;
+    --shelf-turn: 12;
   }
 
   &:active {
@@ -82,6 +98,9 @@
     pointer-events: auto;
     transform: translate(-50%, -50%);
     will-change: transform, opacity, filter;
+    // Dragging the row with a mouse shouldn't select card text.
+    -webkit-user-select: none;
+    user-select: none;
   }
 
   &__card {
@@ -120,9 +139,12 @@
         color-mix(in srgb, var(--accent) 40%, var(--glass-shadow));
   }
 
-  // Hovering a plane lifts it toward the viewer, as in the reference.
-  &__card:hover &__media {
-    transform: translateY(-10px) scale(1.04);
+  // Hovering a plane lifts it toward the viewer, as in the reference. Touch
+  // screens skip it: a tap leaves :hover stuck on the card.
+  @media (hover: hover) {
+    &__card:hover &__media {
+      transform: translateY(-10px) scale(1.04);
+    }
   }
 
   &__card:focus-visible &__media {

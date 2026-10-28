@@ -31,25 +31,6 @@ export function scrollToTarget(
   });
 }
 
-/**
- * Nudge the page by a pixel delta through whichever scroll authority is active.
- * Writing `scrollTop` directly while Lenis is running desyncs its internal
- * target, so drag gestures must route through `lenis.scrollTo`.
- */
-export function scrollByDelta(delta: number): void {
-  const lenis = instance;
-
-  if (lenis) {
-    lenis.scrollTo(lenis.actualScroll + delta, {
-      immediate: true,
-      force: true,
-    });
-    return;
-  }
-
-  window.scrollBy(0, delta);
-}
-
 /** Scroll the page to an absolute Y position through the active scroll authority. */
 export function scrollToY(y: number, options: { immediate?: boolean } = {}): void {
   const lenis = instance;

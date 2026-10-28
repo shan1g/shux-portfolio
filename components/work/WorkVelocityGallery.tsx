@@ -10,19 +10,34 @@ import {
 } from "react";
 import Image from "next/image";
 import gsap from "gsap";
-import { Observer } from "gsap/Observer";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { projects, type Project } from "@/lib/projects";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
-import { scrollByDelta, scrollToY } from "@/lib/scroll/lenisInstance";
+import { scrollToY } from "@/lib/scroll/lenisInstance";
 import { WorkReelItem } from "./WorkReelItem";
 import { WorkDetailOverlay } from "./WorkDetailOverlay";
 
-gsap.registerPlugin(ScrollTrigger, Observer);
+gsap.registerPlugin(ScrollTrigger);
 
 type ActiveDetail = {
   project: Project;
   origin: HTMLElement | null;
+};
+
+type LineGeometry = {
+  stepX: number;
+  stepY: number;
+  stepZ: number;
+  turn: number;
+};
+
+type Press = {
+  id: number;
+  x: number;
+  y: number;
+  startHead: number;
+  lastTime: number;
+  engaged: boolean;
 };
 
 const LAST_INDEX = projects.length - 1;
@@ -31,19 +46,24 @@ const LAST_INDEX = projects.length - 1;
 const STEP_VIEWPORTS = 0.6;
 
 // Fraction at each end of a step during which the shelf holds on a project.
-// Without it the row drifts continuously instead of resting on each title.
-const DWELL = 0.22;
+// Kept small so scrolling moves the row continuously instead of hesitating
+// and jumping; the scroll-end snap does the resting.
+const DWELL = 0.12;
 
 // Spring driving the shelf head, tuned to A24's (frequency ~9.5, light
 // underdamping) so the row settles with a small overshoot.
 const SPRING_STIFFNESS = 90;
 const SPRING_DAMPING = 15;
 
-// Upcoming planes line up on a diagonal that rises into the distance, like the
-// motion.dev "Scroll velocity: 3D planes" example. Units are card widths.
-const LINE_STEP_X = 0.62;
-const LINE_STEP_Y = 0.2;
-const LINE_STEP_Z = 0.9;
+// Fallback for the diagonal the upcoming planes sit on. The live values come
+// from the --shelf-step-* and --shelf-turn custom properties so mobile and
+// desktop can space the planes differently. Steps are in card widths.
+const DEFAULT_GEOMETRY: LineGeometry = {
+  stepX: 0.62,
+  stepY: 0.2,
+  stepZ: 0.9,
+  turn: 12,
+};
 
 // Passed planes accelerate off screen to the left, under the credits panel.
 const EXIT_STEP_X = 1.35;
@@ -64,6 +84,18 @@ const MAX_BLUR = 14;
 // nearest project.
 const SNAP_DELAY_MS = 160;
 
+// Horizontal drag. A press becomes a drag after DRAG_START_PX of mostly
+// horizontal movement. On release the shelf steps once the flick-projected
+// position passes STEP_THRESHOLD of a project from where the drag began.
+const DRAG_START_PX = 8;
+const STEP_THRESHOLD = 0.22;
+const FLICK_PROJECTION_S = 0.15;
+const MAX_DRAG_VELOCITY = 12;
+
+// Clicks this soon after a drag are swallowed, so a swipe that ends on a card
+// doesn't also select or open it.
+const CLICK_SUPPRESS_MS = 350;
+
 function dwell(value: number): number {
   const base = Math.floor(value);
   const fraction = value - base;
@@ -71,6 +103,23 @@ function dwell(value: number): number {
   if (fraction >= 1 - DWELL) return base + 1;
   const t = (fraction - DWELL) / (1 - DWELL * 2);
   return base + t * t * (3 - 2 * t);
+}
+
+const clampIndex = (value: number) =>
+  Math.min(LAST_INDEX, Math.max(0, value));
+
+function readGeometry(element: HTMLElement): LineGeometry {
+  const style = getComputedStyle(element);
+  const read = (name: string, fallback: number) => {
+    const value = Number.parseFloat(style.getPropertyValue(name));
+    return Number.isFinite(value) ? value : fallback;
+  };
+  return {
+    stepX: read("--shelf-step-x", DEFAULT_GEOMETRY.stepX),
+    stepY: read("--shelf-step-y", DEFAULT_GEOMETRY.stepY),
+    stepZ: read("--shelf-step-z", DEFAULT_GEOMETRY.stepZ),
+    turn: read("--shelf-turn", DEFAULT_GEOMETRY.turn),
+  };
 }
 
 const pad = (value: number) => String(value).padStart(3, "0");
@@ -86,12 +135,15 @@ export function WorkVelocityGallery() {
   const [active, setActive] = useState(0);
   const [detail, setDetail] = useState<ActiveDetail | null>(null);
 
+  // Jump the page scroll and let the spring animate the shelf. A smooth
+  // Lenis scroll under the spring eased every step twice.
   const goTo = useCallback((index: number) => {
     const trigger = triggerRef.current;
     if (!trigger || LAST_INDEX <= 0) return;
-    const clamped = Math.min(LAST_INDEX, Math.max(0, index));
     scrollToY(
-      trigger.start + (trigger.end - trigger.start) * (clamped / LAST_INDEX),
+      trigger.start +
+        (trigger.end - trigger.start) * (clampIndex(index) / LAST_INDEX),
+      { immediate: true },
     );
   }, []);
 
@@ -145,8 +197,16 @@ export function WorkVelocityGallery() {
     );
     const state = { target: 0, head: 0, velocity: 0 };
     let cardWidth = items[0]?.offsetWidth || 320;
+    let geometry = readGeometry(sticky);
     let visible = true;
     let lastActive = activeRef.current;
+    let dragging = false;
+    let touching = false;
+    let suppressClickUntil = 0;
+    let press: Press | null = null;
+
+    const positionFor = (index: number, self: ScrollTrigger) =>
+      self.start + (self.end - self.start) * (index / LAST_INDEX);
 
     // Rest on a project once scrolling stops. Without this the shelf can
     // stop mid-step (PageDown, a short flick), leaving the active card half
@@ -155,13 +215,17 @@ export function WorkVelocityGallery() {
     const scheduleSnap = (self: ScrollTrigger) => {
       window.clearTimeout(snapTimer);
       snapTimer = window.setTimeout(() => {
-        if (!self.isActive) return;
+        if (!self.isActive || dragging) return;
+        // A finger resting on the screen holds the native scroll mid-step;
+        // snapping under it fights the user. Wait until it lifts.
+        if (touching) {
+          scheduleSnap(self);
+          return;
+        }
         const position = self.progress * LAST_INDEX;
         const nearest = Math.round(position);
         if (Math.abs(position - nearest) >= 0.002) {
-          scrollToY(
-            self.start + (self.end - self.start) * (nearest / LAST_INDEX),
-          );
+          scrollToY(positionFor(nearest, self), { immediate: true });
         }
       }, SNAP_DELAY_MS);
     };
@@ -177,14 +241,10 @@ export function WorkVelocityGallery() {
       anticipatePin: 1,
       invalidateOnRefresh: true,
       onUpdate: (self) => {
+        // While dragging, the finger owns the head.
+        if (dragging) return;
         state.target = dwell(self.progress * LAST_INDEX);
         scheduleSnap(self);
-        if (railRef.current) {
-          railRef.current.style.transform = `scaleX(${Math.max(
-            0.02,
-            self.progress,
-          )})`;
-        }
       },
     });
     triggerRef.current = trigger;
@@ -193,7 +253,7 @@ export function WorkVelocityGallery() {
 
     const layout = () => {
       // The wave's strength follows the head's speed: it ripples through the
-      // line while scrolling and flattens once the shelf settles.
+      // line while moving and flattens once the shelf settles.
       const speed = Math.abs(state.velocity);
       const amplitude = Math.min(WAVE_MAX, speed * WAVE_GAIN) * cardWidth;
       const phase = performance.now() * 0.004;
@@ -212,11 +272,12 @@ export function WorkVelocityGallery() {
         // Ahead: up the diagonal into the distance. Behind: accelerate off
         // screen to the left, passing under the glass credits.
         const x =
-          (ahead * LINE_STEP_X - behind * EXIT_STEP_X * (1 + behind * 0.4)) *
+          (ahead * geometry.stepX -
+            behind * EXIT_STEP_X * (1 + behind * 0.4)) *
           cardWidth;
-        const y = -ahead * LINE_STEP_Y * cardWidth + wave - front * 14;
-        const z = -ahead * LINE_STEP_Z * cardWidth;
-        const turn = -12 - Math.min(1, distance) * 20;
+        const y = -ahead * geometry.stepY * cardWidth + wave - front * 14;
+        const z = -ahead * geometry.stepZ * cardWidth;
+        const turn = -geometry.turn - Math.min(1, distance) * 20;
         const roll = (wave / Math.max(cardWidth, 1)) * -14;
         const scale = 0.84 + front * 0.16;
         const blur = Math.min(
@@ -243,7 +304,14 @@ export function WorkVelocityGallery() {
         item.style.zIndex = String(100 - Math.round(distance * 10));
       });
 
-      const next = Math.min(LAST_INDEX, Math.max(0, Math.round(state.head)));
+      // The rail follows the animated head, so it moves with the cards
+      // during drags and spring steps rather than jumping with the scroll.
+      if (railRef.current && LAST_INDEX > 0) {
+        const progress = Math.min(1, Math.max(0.02, state.head / LAST_INDEX));
+        railRef.current.style.transform = `scaleX(${progress.toFixed(4)})`;
+      }
+
+      const next = clampIndex(Math.round(state.head));
       if (next !== lastActive) {
         lastActive = next;
         activeRef.current = next;
@@ -253,6 +321,13 @@ export function WorkVelocityGallery() {
 
     const tick = (_time: number, deltaTime: number) => {
       if (!visible) return;
+      if (dragging) {
+        // The head follows the finger. Keep laying out so the wave animates,
+        // and let the velocity fade if the finger holds still.
+        state.velocity *= 0.9;
+        layout();
+        return;
+      }
       const settled =
         Math.abs(state.target - state.head) < 0.0005 &&
         Math.abs(state.velocity) < 0.0005;
@@ -276,8 +351,118 @@ export function WorkVelocityGallery() {
     layout();
     gsap.ticker.add(tick);
 
+    // Horizontal drag. The cards track the finger directly; on release the
+    // page scroll jumps to the chosen project and the spring carries the
+    // drag's velocity into the settle. Vertical movement is left to the
+    // native page scroll (touch-action: pan-y on the shelf).
+    const stepPx = () => Math.max(1, cardWidth * geometry.stepX);
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (!event.isPrimary || event.button !== 0 || !trigger.isActive) return;
+      press = {
+        id: event.pointerId,
+        x: event.clientX,
+        y: event.clientY,
+        startHead: state.head,
+        lastTime: event.timeStamp,
+        engaged: false,
+      };
+    };
+
+    const onPointerMove = (event: PointerEvent) => {
+      if (!press || event.pointerId !== press.id) return;
+
+      if (!press.engaged) {
+        const dx = event.clientX - press.x;
+        const dy = event.clientY - press.y;
+        if (Math.abs(dy) > DRAG_START_PX && Math.abs(dy) >= Math.abs(dx)) {
+          press = null;
+          return;
+        }
+        if (Math.abs(dx) < DRAG_START_PX) return;
+        // Start measuring from here so the row doesn't jump by the threshold.
+        press.engaged = true;
+        press.x = event.clientX;
+        press.startHead = state.head;
+        press.lastTime = event.timeStamp;
+        dragging = true;
+        window.clearTimeout(snapTimer);
+        try {
+          sticky.setPointerCapture(event.pointerId);
+        } catch {
+          // The pointer was already released.
+        }
+        return;
+      }
+
+      const raw = press.startHead - (event.clientX - press.x) / stepPx();
+      // Rubber band past the first and last project.
+      const head =
+        raw < 0
+          ? raw * 0.35
+          : raw > LAST_INDEX
+            ? LAST_INDEX + (raw - LAST_INDEX) * 0.35
+            : raw;
+      const dt = Math.max(1, event.timeStamp - press.lastTime) / 1000;
+      const instant = Math.max(
+        -MAX_DRAG_VELOCITY,
+        Math.min(MAX_DRAG_VELOCITY, (head - state.head) / dt),
+      );
+      state.velocity = state.velocity * 0.6 + instant * 0.4;
+      state.head = head;
+      state.target = head;
+      press.lastTime = event.timeStamp;
+    };
+
+    const onPointerEnd = (event: PointerEvent) => {
+      if (!press || event.pointerId !== press.id) return;
+      const { engaged, startHead } = press;
+      press = null;
+      if (!engaged) return;
+
+      dragging = false;
+      suppressClickUntil = performance.now() + CLICK_SUPPRESS_MS;
+
+      // A short swipe or flick steps one project; a long drag lands on the
+      // nearest project to where the flick would carry it.
+      const from = Math.round(startHead);
+      const projected = state.head + state.velocity * FLICK_PROJECTION_S;
+      let next = Math.round(projected);
+      if (next === from && Math.abs(projected - from) > STEP_THRESHOLD) {
+        next = from + Math.sign(projected - from);
+      }
+      const index = clampIndex(next);
+      state.target = index;
+      scrollToY(positionFor(index, trigger), { immediate: true });
+    };
+
+    const onClickCapture = (event: MouseEvent) => {
+      if (performance.now() < suppressClickUntil) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+
+    const onTouchStart = () => {
+      touching = true;
+    };
+    const onTouchEnd = (event: TouchEvent) => {
+      touching = event.touches.length > 0;
+      if (!touching && trigger.isActive && !dragging) scheduleSnap(trigger);
+    };
+
+    sticky.addEventListener("pointerdown", onPointerDown);
+    sticky.addEventListener("pointermove", onPointerMove);
+    sticky.addEventListener("pointerup", onPointerEnd);
+    sticky.addEventListener("pointercancel", onPointerEnd);
+    sticky.addEventListener("click", onClickCapture, true);
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchend", onTouchEnd, { passive: true });
+    window.addEventListener("touchcancel", onTouchEnd, { passive: true });
+
     const resizeObserver = new ResizeObserver(() => {
       cardWidth = items[0]?.offsetWidth || cardWidth;
+      geometry = readGeometry(sticky);
       layout();
     });
     if (items[0]) resizeObserver.observe(items[0]);
@@ -296,6 +481,14 @@ export function WorkVelocityGallery() {
       cancelled = true;
       window.clearTimeout(snapTimer);
       gsap.ticker.remove(tick);
+      sticky.removeEventListener("pointerdown", onPointerDown);
+      sticky.removeEventListener("pointermove", onPointerMove);
+      sticky.removeEventListener("pointerup", onPointerEnd);
+      sticky.removeEventListener("pointercancel", onPointerEnd);
+      sticky.removeEventListener("click", onClickCapture, true);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchend", onTouchEnd);
+      window.removeEventListener("touchcancel", onTouchEnd);
       resizeObserver.disconnect();
       visibilityObserver.disconnect();
       trigger.kill();
@@ -308,23 +501,6 @@ export function WorkVelocityGallery() {
       });
     };
   }, [reducedMotion]);
-
-  useEffect(() => {
-    const sticky = stickyRef.current;
-    if (reducedMotion || !sticky || detail) return;
-
-    const observer = Observer.create({
-      target: sticky,
-      type: "touch,pointer",
-      dragMinimum: 6,
-      tolerance: 8,
-      onChangeX: (self) => {
-        scrollByDelta(-self.deltaX * 1.4);
-      },
-    });
-
-    return () => observer.kill();
-  }, [reducedMotion, detail]);
 
   if (reducedMotion) {
     return (

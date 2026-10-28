@@ -47,7 +47,7 @@ export function WorkReelItem({
               src={project.image}
               alt=""
               fill
-              sizes="(max-width: 767px) 68vw, 30vw"
+              sizes="(max-width: 767px) 100vw, 40vw"
               className="work-shelf__image"
               draggable={false}
             />

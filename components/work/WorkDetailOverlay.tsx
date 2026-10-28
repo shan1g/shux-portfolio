@@ -16,21 +16,6 @@ type WorkDetailOverlayProps = {
   onClose: () => void;
 };
 
-const CHAPTERS = [
-  {
-    label: "Challenge",
-    body: "The brief arrived with a fixed launch date, a broad audience, and no existing pattern to lean on.",
-  },
-  {
-    label: "Approach",
-    body: "Flows and states were mapped first, then built as a small reusable system so every surface stayed consistent.",
-  },
-  {
-    label: "Outcome",
-    body: "Shipped on schedule, held up under launch traffic, and stayed easy to extend after handover.",
-  },
-];
-
 export function WorkDetailOverlay({
   project,
   origin,
@@ -40,6 +25,8 @@ export function WorkDetailOverlay({
   const mediaRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const reducedMotion = useReducedMotion();
+  const chapters = project.chapters ?? [];
+  const highlights = project.highlights ?? [];
 
   const close = useCallback(() => {
     const root = rootRef.current;
@@ -145,7 +132,7 @@ export function WorkDetailOverlay({
       ref={rootRef}
       role="dialog"
       aria-modal="true"
-      aria-label={`${project.title} case study`}
+      aria-labelledby="work-detail-title"
       className="work-detail"
     >
       <button
@@ -156,7 +143,10 @@ export function WorkDetailOverlay({
         onClick={close}
       />
 
-      <div className="work-detail__panel">
+      {/* The panel is the scroll container, so long case studies scroll
+          instead of being clipped. Lenis is paused while the dialog is open
+          and `data-lenis-prevent` hands wheel and touch back to the browser. */}
+      <div className="work-detail__panel" data-lenis-prevent>
         <header className="work-detail__bar">
           <button
             ref={closeRef}
@@ -174,7 +164,7 @@ export function WorkDetailOverlay({
               src={project.image}
               alt=""
               fill
-              sizes="(max-width: 767px) 100vw, 60vw"
+              sizes="(max-width: 1023px) 100vw, 55vw"
               priority
               className="work-detail__image"
             />
@@ -186,25 +176,41 @@ export function WorkDetailOverlay({
         </div>
 
         <div className="work-detail__body">
-          <h2 className="work-detail__title" data-overlay-fade>
+          <h2
+            id="work-detail-title"
+            className="work-detail__title"
+            data-overlay-fade
+          >
             {project.title}
           </h2>
           <p className="work-detail__lead" data-overlay-fade>
             {project.description}
           </p>
 
-          <ul className="work-detail__chapters">
-            {CHAPTERS.map((chapter) => (
-              <li
-                key={chapter.label}
-                className="work-detail__chapter"
-                data-overlay-fade
-              >
-                <p className="work-detail__chapter-label">{chapter.label}</p>
-                <p className="work-detail__chapter-body">{chapter.body}</p>
-              </li>
-            ))}
-          </ul>
+          {highlights.length > 0 ? (
+            <ul className="work-detail__highlights" data-overlay-fade>
+              {highlights.map((highlight) => (
+                <li key={highlight} className="work-detail__highlight">
+                  {highlight}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          {chapters.length > 0 ? (
+            <ul className="work-detail__chapters">
+              {chapters.map((chapter) => (
+                <li
+                  key={chapter.label}
+                  className="work-detail__chapter"
+                  data-overlay-fade
+                >
+                  <p className="work-detail__chapter-label">{chapter.label}</p>
+                  <p className="work-detail__chapter-body">{chapter.body}</p>
+                </li>
+              ))}
+            </ul>
+          ) : null}
 
           <ul className="work-detail__tags" data-overlay-fade>
             {project.tags.map((tag) => (
@@ -221,7 +227,9 @@ export function WorkDetailOverlay({
             className="work-detail__link"
             data-overlay-fade
           >
-            View full project
+            {project.source === "github"
+              ? "View the project"
+              : "View full project on Behance"}
           </a>
         </div>
       </div>

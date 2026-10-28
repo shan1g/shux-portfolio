@@ -1,8 +1,13 @@
 "use client";
 
+import { useRef, useState } from "react";
+import { motion } from "motion/react";
 import { KineticStatement } from "@/components/type/KineticStatement";
 import { OutroMarquee } from "@/components/sections/OutroMarquee";
+import { SectionEyebrow } from "@/components/ui/SectionEyebrow";
 import { siteLinks } from "@/lib/projects";
+import { springSnappy, springSoft } from "@/lib/motion";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 const CTA_LINES = ["Let's build the one", "they didn't expect."];
@@ -15,12 +20,21 @@ const links = [
 ];
 
 export function ContactSection() {
+  const sectionRef = useRef<HTMLElement>(null);
   const ref = useScrollReveal();
+  const reducedMotion = useReducedMotion();
+  const [hovered, setHovered] = useState<string | null>(null);
 
   return (
-    <section id="contact" aria-labelledby="contact-heading" className="section">
+    <section
+      ref={sectionRef}
+      id="contact"
+      aria-labelledby="contact-heading"
+      className="section"
+      data-glass-shape="fractal"
+    >
       <div className="container">
-        <p className="text-eyebrow">Connect</p>
+        <SectionEyebrow targetRef={sectionRef}>Connect</SectionEyebrow>
         <h2 id="contact-heading" className="text-section-title">
           Contact
         </h2>
@@ -38,23 +52,49 @@ export function ContactSection() {
             on the edge.
           </p>
 
-          <ul className="outro-links">
-            {links.map((link) => (
-              <li key={link.label}>
-                <a
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-reveal
-                  className="outro-links__link"
-                >
-                  <span className="outro-links__label">{link.label}</span>
-                  <span className="outro-links__arrow" aria-hidden="true">
-                    ↗
-                  </span>
-                </a>
-              </li>
-            ))}
+          <ul className="outro-links" onPointerLeave={() => setHovered(null)}>
+            {links.map((link) => {
+              const isHovered = hovered === link.label;
+
+              return (
+                <li key={link.label}>
+                  <a
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-reveal
+                    className="outro-links__link"
+                    onPointerEnter={() => setHovered(link.label)}
+                    onFocus={() => setHovered(link.label)}
+                    onBlur={() => setHovered(null)}
+                  >
+                    {isHovered ? (
+                      <motion.span
+                        layoutId={
+                          reducedMotion ? undefined : "outro-link-highlight"
+                        }
+                        transition={springSoft}
+                        className="outro-links__highlight"
+                        aria-hidden="true"
+                      />
+                    ) : null}
+                    <span className="outro-links__label">{link.label}</span>
+                    <motion.span
+                      className="outro-links__arrow"
+                      animate={
+                        isHovered && !reducedMotion
+                          ? { x: 3, y: -3 }
+                          : { x: 0, y: 0 }
+                      }
+                      transition={springSnappy}
+                      aria-hidden="true"
+                    >
+                      ↗
+                    </motion.span>
+                  </a>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </div>

@@ -1,60 +1,97 @@
-.work-reel-scroll {
+// Selected Work, modelled on a24.raviklaassens.com: the projects sit on an arc
+// in a row seen at an angle. Scroll, drag or the arrows move the head one
+// project at a time, and the front project's credits sit beside it.
+.work-shelf-scroll {
   position: relative;
   width: 100%;
 }
 
-.work-reel-sticky {
+.work-shelf {
+  --shelf-card-w: min(68vw, 19rem);
+  // Where the front plane sits; the line rises up and right from here.
+  --shelf-anchor-x: 50%;
+  --shelf-anchor-y: 52%;
+  // The audio pill, menu button and tab bar are fixed 1.25rem from the
+  // bottom. Shelf UI starts above them so the controls are not covered.
+  --shelf-chrome: calc(5rem + var(--safe-bottom));
+
   position: relative;
-  display: flex;
-  height: 100dvh;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: @space-8;
+  // svh is the small viewport: the controls stay above a mobile address bar,
+  // and the pinned height doesn't change as the bar shows or hides.
+  // !important beats the px height GSAP writes inline when it pins the shelf.
+  // That value comes from the last refresh, so after a resize it can be taller
+  // than the viewport and push the controls under the fixed bottom bar.
+  height: 100vh !important;
+  height: 100svh !important;
+  max-height: 100svh !important;
   overflow: hidden;
   touch-action: pan-y;
   cursor: grab;
 
+  // Short phones: the credits panel rises into the stage, so shrink and lift
+  // the front plane to keep it clear of the glass. The md block below wins.
+  @media (max-height: 700px) {
+    --shelf-card-w: min(68vw, 19rem, 50dvh);
+    --shelf-anchor-y: 45%;
+  }
+
+  @media (min-width: @bp-md) {
+    --shelf-card-w: min(30vw, 27rem);
+    --shelf-anchor-x: 60%;
+    --shelf-anchor-y: 56%;
+  }
+
   &:active {
     cursor: grabbing;
   }
-}
 
-.work-reel {
-  display: flex;
-  align-items: stretch;
-  gap: @space-6;
-  margin: 0;
-  padding-inline: @space-6;
-  list-style: none;
-  will-change: transform;
-
-  @media (min-width: @bp-md) {
-    gap: @space-10;
-    padding-inline: @space-12;
-  }
-
-  &__item {
-    flex: 0 0 auto;
-    width: min(78vw, 22rem);
-    list-style: none;
+  // The stage spans the full width so passed planes can travel off screen to
+  // the left, under the credits panel.
+  &__stage {
+    position: absolute;
+    inset: 0 0 38% 0;
+    perspective: 1600px;
+    perspective-origin: var(--shelf-anchor-x) 40%;
+    pointer-events: none;
 
     @media (min-width: @bp-md) {
-      width: min(34vw, 30rem);
+      inset: 0;
     }
   }
 
-  &__button {
-    display: flex;
+  // A slight tilt makes the line read as rising into the distance. The
+  // transform also makes the row a stacking context, so every plane stays
+  // under the credits panel.
+  &__row {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    transform: rotateX(4deg);
+    transform-style: preserve-3d;
+  }
+
+  &__item {
+    position: absolute;
+    top: var(--shelf-anchor-y);
+    left: var(--shelf-anchor-x);
+    width: var(--shelf-card-w);
+    aspect-ratio: 4 / 3;
+    list-style: none;
+    pointer-events: auto;
+    transform: translate(-50%, -50%);
+    will-change: transform, opacity, filter;
+  }
+
+  &__card {
+    display: block;
     width: 100%;
-    flex-direction: column;
-    gap: @space-4;
+    height: 100%;
     padding: 0;
     border: 0;
     background: none;
     color: inherit;
-    font: inherit;
-    text-align: left;
     cursor: pointer;
   }
 
@@ -62,20 +99,35 @@
     position: relative;
     display: flex;
     width: 100%;
-    aspect-ratio: 4 / 3;
+    height: 100%;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    border-radius: 12px;
+    border-radius: 10px;
     border: 1px solid var(--glass-border);
     background: var(--glass-bg);
-    box-shadow: 0 16px 48px var(--glass-shadow);
-    transition: transform @transition-base;
+    box-shadow: 0 30px 60px -24px var(--glass-shadow);
+    transition: border-color @transition-base, box-shadow @transition-base,
+      transform 0.45s @ease-out-soft;
   }
 
-  &__button:hover &__media,
-  &__button:focus-visible &__media {
-    transform: translateY(-6px);
+  // Active plane: accent ring and a lifted, accent-tinted glow.
+  &__item--active &__media {
+    border-color: var(--accent);
+    box-shadow:
+      0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent),
+      0 40px 90px -24px
+        color-mix(in srgb, var(--accent) 40%, var(--glass-shadow));
+  }
+
+  // Hovering a plane lifts it toward the viewer, as in the reference.
+  &__card:hover &__media {
+    transform: translateY(-10px) scale(1.04);
+  }
+
+  &__card:focus-visible &__media {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
   }
 
   &__image {
@@ -87,55 +139,251 @@
     opacity: 0.5;
   }
 
-  &__scrim {
+  // Light catches the front card only, like the sheen on A24's front disc.
+  &__sheen {
     position: absolute;
     inset: 0;
     background: linear-gradient(
-      to top,
-      color-mix(in srgb, var(--background) 72%, transparent) 0%,
-      transparent 55%
+      115deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.16) 48%,
+      transparent 62%
     );
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.6s @ease-out-soft;
+  }
+
+  &__item--active &__sheen {
+    opacity: 1;
+  }
+
+  &__index {
+    position: absolute;
+    bottom: @space-3;
+    left: @space-3;
+    padding: 2px @space-2;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--background) 60%, transparent);
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    color: var(--foreground);
     pointer-events: none;
   }
 
-  &__meta {
+  &__item--active &__index {
+    color: var(--accent);
+  }
+
+  &__badge {
+    position: absolute;
+    top: @space-3;
+    right: @space-3;
+    padding: @space-1 @space-3;
+    border-radius: 9999px;
+    background: var(--accent);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--background);
+    pointer-events: none;
+    animation: shelf-badge-in 0.4s @ease-out-soft both;
+  }
+
+  &__credits {
+    position: absolute;
+    right: @space-6;
+    bottom: calc(var(--shelf-chrome) + 3.75rem);
+    left: @space-6;
+    z-index: 5;
+    pointer-events: none;
+
+    // Desktop: the panel fills the band between the top inset and the
+    // controls and centres its content there. Centring on the full shelf
+    // height pushed a tall panel past the top edge in short windows.
+    @media (min-width: @bp-md) {
+      top: calc(@space-10 + var(--safe-top));
+      right: auto;
+      bottom: calc(var(--shelf-chrome) + 4.5rem);
+      left: @space-12;
+      display: flex;
+      width: min(28vw, 24rem);
+      flex-direction: column;
+      justify-content: center;
+    }
+  }
+
+  &__credits-inner {
     display: flex;
     flex-direction: column;
-    gap: @space-2;
+    align-items: flex-start;
+    gap: @space-3;
+    padding: @space-5;
+    border: 1px solid var(--glass-border);
+    border-radius: 18px;
+    // Glass panel: planes leaving the line pass under it and blur.
+    background: color-mix(in srgb, var(--background) 55%, transparent);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    animation: shelf-credits-in 0.6s @ease-out-soft both;
+
+    @media (min-width: @bp-md) {
+      gap: @space-4;
+      padding: @space-6;
+    }
   }
 
   &__title {
     margin: 0;
-    font-size: 1.0625rem;
+    font-size: clamp(1.375rem, 2.6vw, 2.25rem);
     font-weight: 600;
-    line-height: 1.35;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
     color: var(--foreground);
-    transition: color @transition-fast;
   }
 
-  &__button:hover &__title,
-  &__button:focus-visible &__title {
-    color: var(--accent);
-  }
-
-  &__tags {
+  &__lead {
+    display: -webkit-box;
     margin: 0;
-    font-size: 0.75rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    overflow: hidden;
+    font-size: 0.9375rem;
+    line-height: 1.55;
     color: var(--muted);
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+
+    @media (min-width: @bp-md) {
+      -webkit-line-clamp: 5;
+    }
   }
-}
 
-.work-reel-status {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: @space-4;
-  padding-inline: @space-6;
+  &__facts {
+    display: none;
+    grid-template-columns: auto 1fr;
+    gap: @space-1 @space-4;
+    margin: 0;
+    font-size: 0.8125rem;
 
-  @media (min-width: @bp-md) {
-    padding-inline: @space-12;
+    @media (min-width: @bp-md) {
+      display: grid;
+    }
+
+    dt {
+      font-family: var(--font-geist-mono), ui-monospace, monospace;
+      font-size: 0.6875rem;
+      letter-spacing: 0.14em;
+      line-height: 1.6;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    dd {
+      margin: 0;
+      color: var(--foreground);
+    }
+  }
+
+  &__notes {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    gap: @space-2;
+    margin: 0;
+    padding: @space-4 0 0;
+    border-top: 1px solid var(--foreground-10);
+    list-style: none;
+
+    @media (min-width: @bp-md) {
+      display: flex;
+    }
+  }
+
+  &__note {
+    display: flex;
+    align-items: baseline;
+    gap: @space-3;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: var(--foreground);
+
+    &::before {
+      content: "";
+      flex: 0 0 auto;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      transform: translateY(-2px);
+    }
+  }
+
+  &__open {
+    min-height: 2.5rem;
+    padding: @space-2 @space-5;
+    border-radius: 9999px;
+    border: 1px solid var(--accent);
+    background: none;
+    color: var(--accent);
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: background @transition-fast, color @transition-fast;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--accent);
+      color: var(--background);
+    }
+  }
+
+  &__controls {
+    position: absolute;
+    right: @space-6;
+    bottom: var(--shelf-chrome);
+    left: @space-6;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: @space-3;
+
+    @media (min-width: @bp-md) {
+      right: @space-12;
+      left: @space-12;
+      gap: @space-4;
+    }
+  }
+
+  &__nav {
+    display: inline-flex;
+    flex: 0 0 auto;
+    width: 2.75rem;
+    height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 9999px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    color: var(--foreground);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: color @transition-fast, border-color @transition-fast,
+      opacity @transition-fast;
+
+    &:hover:not(:disabled),
+    &:focus-visible {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
   }
 
   &__count {
@@ -153,8 +401,8 @@
 
   &__rail {
     position: relative;
-    flex: 1;
     display: block;
+    flex: 1;
     height: 1px;
     overflow: hidden;
     background: var(--foreground-10);
@@ -171,12 +419,68 @@
   }
 
   &__hint {
+    display: none;
     margin: 0;
     font-size: 0.6875rem;
     letter-spacing: 0.16em;
     text-transform: uppercase;
     color: var(--muted);
     opacity: 0.7;
+
+    @media (min-width: @bp-md) {
+      display: block;
+    }
+  }
+
+  // Short desktop windows: drop the extras so the credits fit above the
+  // controls. These come last so they win over the md rules above.
+  @media (min-width: @bp-md) and (max-height: 760px) {
+    &__notes {
+      display: none;
+    }
+
+    &__lead {
+      -webkit-line-clamp: 3;
+    }
+  }
+
+  @media (min-width: @bp-md) and (max-height: 600px) {
+    &__facts {
+      display: none;
+    }
+  }
+}
+
+@keyframes shelf-credits-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+@keyframes shelf-badge-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .work-shelf__credits-inner,
+  .work-shelf__badge {
+    animation: none;
   }
 }
 
@@ -200,19 +504,24 @@
     cursor: pointer;
   }
 
-  // The panel is sized to the viewport so the case study never needs an
-  // internal scrollbar; the media block absorbs the remaining space.
+  // The panel is the scroll container. The old layout capped the media and
+  // body to fixed viewport heights with `object-fit: cover`, which cropped
+  // both the artwork and the copy. Content now takes its natural height and
+  // the panel scrolls.
   &__panel {
     position: relative;
     display: flex;
     width: 100%;
-    max-width: 72rem;
+    max-width: 76rem;
+    height: 100%;
     max-height: 100dvh;
     flex-direction: column;
-    gap: @space-4;
-    overflow: hidden;
+    gap: @space-6;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     padding: calc(@space-6 + var(--safe-top)) @space-6
-      calc(@space-6 + var(--safe-bottom));
+      calc(@space-10 + var(--safe-bottom));
     background: var(--background);
 
     @media (min-width: @bp-md) {
@@ -221,16 +530,19 @@
 
     @media (min-width: @bp-lg) {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      grid-template-rows: auto minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      grid-template-rows: auto auto;
       align-items: start;
-      column-gap: @space-10;
-      row-gap: @space-4;
+      column-gap: @space-12;
+      row-gap: @space-6;
     }
   }
 
-  // Only the close button remains in the bar now that the eyebrow is gone.
+  // The close button stays reachable while the case study scrolls.
   &__bar {
+    position: sticky;
+    top: 0;
+    z-index: 2;
     display: flex;
     align-items: center;
     justify-content: flex-end;
@@ -247,6 +559,7 @@
     border-radius: 9999px;
     border: 1px solid var(--glass-border);
     background: var(--glass-bg);
+    backdrop-filter: blur(10px);
     color: var(--foreground);
     font-size: 0.8125rem;
     font-weight: 500;
@@ -259,30 +572,33 @@
     }
   }
 
+  // `contain` shows the whole Behance artwork. The frame keeps a stable 4:3
+  // box so Flip has a target, and caps its height to stay in view.
   &__media {
     position: relative;
     display: flex;
     width: 100%;
     flex: 0 0 auto;
-    aspect-ratio: 16 / 9;
-    max-height: 34dvh;
+    aspect-ratio: 4 / 3;
+    max-height: 48dvh;
     align-items: center;
     justify-content: center;
     overflow: hidden;
     border-radius: 14px;
     border: 1px solid var(--glass-border);
-    background: var(--glass-bg);
+    background: var(--foreground-5);
 
     @media (min-width: @bp-lg) {
+      position: sticky;
+      top: 4.5rem;
       grid-column: 1;
       grid-row: 2;
-      aspect-ratio: 4 / 3;
-      max-height: 62dvh;
+      max-height: calc(100dvh - 7rem);
     }
   }
 
   &__image {
-    object-fit: cover;
+    object-fit: contain;
   }
 
   &__placeholder {
@@ -292,22 +608,18 @@
 
   &__body {
     display: flex;
-    min-height: 0;
     flex-direction: column;
-    gap: @space-4;
+    gap: @space-5;
 
     @media (min-width: @bp-lg) {
       grid-column: 2;
       grid-row: 2;
-      max-height: 62dvh;
-      overflow-y: auto;
-      padding-right: @space-2;
     }
   }
 
   &__title {
     margin: 0;
-    font-size: clamp(1.75rem, 5vw, 3.25rem);
+    font-size: clamp(1.75rem, 4.4vw, 3.25rem);
     font-weight: 600;
     letter-spacing: -0.03em;
     line-height: 1.1;
@@ -317,9 +629,36 @@
   &__lead {
     max-width: 44rem;
     margin: 0;
-    font-size: 0.9375rem;
+    font-size: 1rem;
     line-height: 1.6;
     color: var(--muted);
+  }
+
+  &__highlights {
+    display: grid;
+    gap: @space-2;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__highlight {
+    display: flex;
+    align-items: baseline;
+    gap: @space-3;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--foreground);
+
+    &::before {
+      content: "";
+      flex: 0 0 auto;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      transform: translateY(-2px);
+    }
   }
 
   &__chapters {
@@ -328,16 +667,6 @@
     margin: 0;
     padding: 0;
     list-style: none;
-
-    @media (min-width: @bp-md) {
-      grid-template-columns: repeat(3, 1fr);
-      gap: @space-6;
-    }
-
-    @media (min-width: @bp-lg) {
-      grid-template-columns: 1fr;
-      gap: @space-4;
-    }
   }
 
   &__chapter {

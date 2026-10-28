@@ -1,7 +1,9 @@
 "use client";
 
+import { useRef } from "react";
 import { AboutScrollLines } from "@/components/about/AboutScrollLines";
 import { KineticStatement } from "@/components/type/KineticStatement";
+import { SectionEyebrow } from "@/components/ui/SectionEyebrow";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 const STATEMENT_LINES = [
@@ -12,12 +14,19 @@ const STATEMENT_LINES = [
 ];
 
 export function AboutSection() {
+  const sectionRef = useRef<HTMLElement>(null);
   const ref = useScrollReveal();
 
   return (
-    <section id="about" aria-labelledby="about-heading" className="section">
+    <section
+      ref={sectionRef}
+      id="about"
+      aria-labelledby="about-heading"
+      className="section"
+      data-glass-shape="orb"
+    >
       <div className="container">
-        <p className="text-eyebrow">Who</p>
+        <SectionEyebrow targetRef={sectionRef}>Who</SectionEyebrow>
         <h2 id="about-heading" className="text-section-title">
           About
         </h2>

@@ -11,17 +11,12 @@
 
 .capability-row {
   position: relative;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: @space-2;
+  isolation: isolate;
   padding-block: @space-6;
   list-style: none;
-  outline-offset: @space-2;
   will-change: transform, opacity;
 
   @media (min-width: @bp-md) {
-    grid-template-columns: minmax(0, 1fr);
-    gap: @space-8;
     padding-block: @space-8;
   }
 
@@ -37,20 +32,63 @@
     will-change: transform;
   }
 
-  &__content {
+  // Shared-layout highlight: a single element that motion moves between rows.
+  &__highlight {
+    position: absolute;
+    inset: 0 -@space-4;
+    z-index: -1;
+    border-radius: 1rem;
+    background: var(--foreground-5);
+    pointer-events: none;
+  }
+
+  &__heading {
+    margin: 0;
+  }
+
+  &__trigger {
     display: grid;
-    grid-template-rows: auto auto;
-    gap: @space-3;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: @space-4;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: @space-2;
+      border-radius: 0.25rem;
+    }
+  }
+
+  &__index {
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 0.8125rem;
+    letter-spacing: 0.08em;
+    color: var(--muted);
   }
 
   &__title {
-    margin: 0;
+    display: block;
     font-size: clamp(1.5rem, 4vw, 2.75rem);
     font-weight: 600;
     letter-spacing: -0.025em;
     line-height: 1.1;
     color: var(--foreground);
     transition: color @transition-fast, transform @transition-base;
+  }
+
+  &__icon {
+    display: inline-block;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--muted);
   }
 
   &__reveal {
@@ -60,14 +98,14 @@
   &__body {
     margin: 0;
     max-width: 34rem;
+    padding-top: @space-3;
     font-size: 0.9375rem;
     line-height: 1.6;
     color: var(--muted);
-    will-change: transform, opacity;
   }
 
   &--active &__title,
-  &:focus-within &__title {
+  &--active &__icon {
     color: var(--accent);
   }
 
@@ -75,19 +113,5 @@
     &--active &__title {
       transform: translateX(@space-3);
     }
-  }
-}
-
-// Hover reveals are unavailable on touch and suppressed for reduced motion, so
-// the supporting copy stays permanently visible there.
-@media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
-  .capability-row__reveal {
-    height: auto !important;
-    overflow: visible;
-  }
-
-  .capability-row__body {
-    opacity: 1 !important;
-    transform: none !important;
   }
 }

@@ -10,6 +10,7 @@ type HeroGlassFractalCanvasProps = {
   containerRef: React.RefObject<HTMLElement | null>;
   pointerRef: React.RefObject<HTMLElement | null>;
   rendererRef: React.MutableRefObject<HeroGlassRenderer | null>;
+  onReady?: (renderer: HeroGlassRenderer) => void;
 };
 
 export default function HeroGlassFractalCanvas({
@@ -17,9 +18,15 @@ export default function HeroGlassFractalCanvas({
   containerRef,
   pointerRef,
   rendererRef,
+  onReady,
 }: HeroGlassFractalCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const onReadyRef = useRef(onReady);
   const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    onReadyRef.current = onReady;
+  }, [onReady]);
 
   useEffect(() => {
     let cancelled = false;
@@ -36,7 +43,9 @@ export default function HeroGlassFractalCanvas({
     rendererRef.current = renderer;
 
     void renderer.ready.then(() => {
-      if (!cancelled) setIsReady(true);
+      if (cancelled) return;
+      setIsReady(true);
+      onReadyRef.current?.(renderer);
     });
 
     return () => {

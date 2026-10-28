@@ -16,12 +16,15 @@ type HeroGlassFractalProps = {
   meshRef?: React.RefObject<HTMLDivElement | null>;
   stickyRef?: React.RefObject<HTMLElement | null>;
   rendererRef?: React.MutableRefObject<HeroGlassRenderer | null>;
+  /** Called once the renderer has compiled and drawn its first frame. */
+  onReady?: (renderer: HeroGlassRenderer) => void;
 };
 
 export function HeroGlassFractal({
   meshRef,
   stickyRef,
   rendererRef: externalRendererRef,
+  onReady,
 }: HeroGlassFractalProps) {
   const reducedMotion = useReducedMotion();
   const { theme } = useTheme();
@@ -56,6 +59,7 @@ export function HeroGlassFractal({
         containerRef={ref}
         pointerRef={stickyRef ?? ref}
         rendererRef={rendererRef}
+        onReady={onReady}
       />
     </div>
   );

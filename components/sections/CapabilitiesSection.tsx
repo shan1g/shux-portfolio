@@ -5,7 +5,12 @@ import { CapabilityList } from "@/components/capabilities/CapabilityList";
 
 export function CapabilitiesSection() {
   return (
-    <Section id="capabilities" title="Capabilities" eyebrow="What">
+    <Section
+      id="capabilities"
+      title="Capabilities"
+      eyebrow="What"
+      glassShape="fractal"
+    >
       <CapabilityList />
     </Section>
   );

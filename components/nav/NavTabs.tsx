@@ -26,7 +26,14 @@ export function NavTabs() {
         start: "top center",
         end: "bottom center",
         onToggle: (self) => {
-          if (self.isActive) setActiveIndex(index);
+          if (self.isActive) {
+            setActiveIndex(index);
+            return;
+          }
+          // A trigger can measure as active before the preloader and hero
+          // settle, then go inactive on refresh. Release the tab it selected so
+          // it cannot stay highlighted; About is the default resting tab.
+          setActiveIndex((current) => (current === index ? 0 : current));
         },
       });
     });

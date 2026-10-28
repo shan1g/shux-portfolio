@@ -50,6 +50,18 @@ export function scrollByDelta(delta: number): void {
   window.scrollBy(0, delta);
 }
 
+/** Scroll the page to an absolute Y position through the active scroll authority. */
+export function scrollToY(y: number, options: { immediate?: boolean } = {}): void {
+  const lenis = instance;
+
+  if (lenis) {
+    lenis.scrollTo(y, { immediate: options.immediate ?? false, force: true });
+    return;
+  }
+
+  window.scrollTo({ top: y, behavior: options.immediate ? "auto" : "smooth" });
+}
+
 export function pauseScroll(): void {
   instance?.stop();
 }

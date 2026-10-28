@@ -8,6 +8,7 @@ export function ProjectsSection() {
       id="work"
       aria-labelledby="work-heading"
       className="section section--carousel section--pinned"
+      data-glass-shape="orb"
     >
       <div className="container">
         <p className="text-eyebrow">Projects</p>

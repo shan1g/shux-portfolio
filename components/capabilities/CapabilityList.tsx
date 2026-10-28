@@ -1,18 +1,32 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef, useState, type FocusEvent } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { capabilities } from "@/lib/projects";
+import { springSoft } from "@/lib/motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const ACTIVE_ROW_CLASS = "capability-row--active";
+const INSTANT = { duration: 0 };
+const REVEAL_EASE = { duration: 0.45, ease: [0.22, 1, 0.36, 1] as const };
 
 export function CapabilityList() {
   const listRef = useRef<HTMLUListElement>(null);
   const reducedMotion = useReducedMotion();
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [canHover, setCanHover] = useState(false);
+  const baseId = useId();
+
+  useEffect(() => {
+    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const update = () => setCanHover(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
 
   useEffect(() => {
     const list = listRef.current;
@@ -59,106 +73,93 @@ export function CapabilityList() {
     return () => ctx.revert();
   }, [reducedMotion]);
 
-  useEffect(() => {
-    const list = listRef.current;
-    if (!list || reducedMotion) return;
-    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+  // Fine pointers open rows on hover/focus (and close when leaving the list).
+  // Touch has no hover, so a tap toggles the row instead.
+  const onListBlur = (event: FocusEvent<HTMLUListElement>) => {
+    if (!canHover) return;
+    const next = event.relatedTarget as Node | null;
+    if (next && event.currentTarget.contains(next)) return;
+    setActiveIndex(null);
+  };
 
-    const rows = gsap.utils.toArray<HTMLElement>("[data-capability-row]", list);
-
-    const cleanups = rows.map((row) => {
-      const reveal = row.querySelector<HTMLElement>("[data-capability-reveal]");
-      const body = row.querySelector<HTMLElement>("[data-capability-body]");
-      if (!reveal || !body) return () => {};
-
-      gsap.set(reveal, { height: 0, overflow: "hidden" });
-      gsap.set(body, { opacity: 0, y: 12 });
-
-      const open = () => {
-        rows.forEach((other) => other.classList.remove(ACTIVE_ROW_CLASS));
-        row.classList.add(ACTIVE_ROW_CLASS);
-
-        gsap.to(reveal, {
-          height: "auto",
-          duration: 0.5,
-          ease: "power3.out",
-          overwrite: true,
-        });
-        gsap.to(body, {
-          opacity: 1,
-          y: 0,
-          duration: 0.45,
-          ease: "power3.out",
-          overwrite: true,
-        });
-      };
-
-      const close = () => {
-        row.classList.remove(ACTIVE_ROW_CLASS);
-
-        gsap.to(body, {
-          opacity: 0,
-          y: 12,
-          duration: 0.3,
-          ease: "power2.in",
-          overwrite: true,
-        });
-        gsap.to(reveal, {
-          height: 0,
-          duration: 0.4,
-          ease: "power3.inOut",
-          overwrite: true,
-        });
-      };
-
-      const onFocusIn = () => open();
-      const onFocusOut = (event: FocusEvent) => {
-        const next = event.relatedTarget as Node | null;
-        if (next && row.contains(next)) return;
-        close();
-      };
-
-      row.addEventListener("pointerenter", open);
-      row.addEventListener("pointerleave", close);
-      row.addEventListener("focusin", onFocusIn);
-      row.addEventListener("focusout", onFocusOut);
-
-      return () => {
-        row.removeEventListener("pointerenter", open);
-        row.removeEventListener("pointerleave", close);
-        row.removeEventListener("focusin", onFocusIn);
-        row.removeEventListener("focusout", onFocusOut);
-        row.classList.remove(ACTIVE_ROW_CLASS);
-        gsap.killTweensOf([reveal, body]);
-        gsap.set(reveal, { clearProps: "all" });
-        gsap.set(body, { clearProps: "all" });
-      };
-    });
-
-    return () => cleanups.forEach((cleanup) => cleanup());
-  }, [reducedMotion]);
+  const highlightTransition = reducedMotion ? INSTANT : springSoft;
+  const revealTransition = reducedMotion ? INSTANT : REVEAL_EASE;
 
   return (
     <div className="capabilities">
-      <ul ref={listRef} className="capability-list">
-        {capabilities.map((capability) => (
-          <li
-            key={capability.index}
-            className="capability-row"
-            data-capability-row
-            tabIndex={0}
-          >
-            <span className="capability-row__rule" data-capability-rule />
-            <div className="capability-row__content">
-              <h3 className="capability-row__title">{capability.title}</h3>
-              <div className="capability-row__reveal" data-capability-reveal>
-                <p className="capability-row__body" data-capability-body>
-                  {capability.body}
-                </p>
-              </div>
-            </div>
-          </li>
-        ))}
+      <ul
+        ref={listRef}
+        className="capability-list"
+        onPointerLeave={canHover ? () => setActiveIndex(null) : undefined}
+        onBlur={onListBlur}
+      >
+        {capabilities.map((capability, index) => {
+          const isActive = index === activeIndex;
+          const panelId = `${baseId}-panel-${index}`;
+
+          return (
+            <li
+              key={capability.index}
+              className={`capability-row${isActive ? " capability-row--active" : ""}`}
+              data-capability-row
+              onPointerEnter={canHover ? () => setActiveIndex(index) : undefined}
+            >
+              <span className="capability-row__rule" data-capability-rule />
+              {isActive ? (
+                <motion.span
+                  layoutId={reducedMotion ? undefined : `${baseId}-highlight`}
+                  transition={highlightTransition}
+                  className="capability-row__highlight"
+                  aria-hidden="true"
+                />
+              ) : null}
+              <h3 className="capability-row__heading">
+                <button
+                  type="button"
+                  className="capability-row__trigger"
+                  aria-expanded={isActive}
+                  aria-controls={isActive ? panelId : undefined}
+                  onFocus={canHover ? () => setActiveIndex(index) : undefined}
+                  onClick={() =>
+                    setActiveIndex((current) =>
+                      !canHover && current === index ? null : index,
+                    )
+                  }
+                >
+                  <span className="capability-row__index">
+                    {capability.index}
+                  </span>
+                  <span className="capability-row__title">
+                    {capability.title}
+                  </span>
+                  <motion.span
+                    className="capability-row__icon"
+                    animate={{ rotate: isActive ? 45 : 0 }}
+                    transition={highlightTransition}
+                    aria-hidden="true"
+                  >
+                    +
+                  </motion.span>
+                </button>
+              </h3>
+              <AnimatePresence initial={false}>
+                {isActive ? (
+                  <motion.div
+                    key="reveal"
+                    id={panelId}
+                    className="capability-row__reveal"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={revealTransition}
+                  >
+                    <p className="capability-row__body">{capability.body}</p>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

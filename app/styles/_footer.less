@@ -28,6 +28,8 @@
   }
 
   &__link {
+    position: relative;
+    isolation: isolate;
     display: flex;
     min-height: 3.25rem;
     align-items: center;
@@ -51,7 +53,18 @@
     font-weight: 500;
   }
 
+  // Shared-layout hover highlight that glides between links.
+  &__highlight {
+    position: absolute;
+    inset: 0 -@space-3;
+    z-index: -1;
+    border-radius: 0.75rem;
+    background: var(--foreground-5);
+    pointer-events: none;
+  }
+
   &__arrow {
+    display: inline-block;
     font-size: 0.875rem;
     color: var(--muted);
   }

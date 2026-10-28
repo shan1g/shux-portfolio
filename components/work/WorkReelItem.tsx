@@ -6,44 +6,66 @@ import type { Project } from "@/lib/projects";
 
 type WorkReelItemProps = {
   project: Project;
-  onOpen: (project: Project, media: HTMLElement) => void;
+  index: number;
+  isActive: boolean;
+  onSelect: (index: number, media: HTMLElement) => void;
 };
 
-export function WorkReelItem({ project, onOpen }: WorkReelItemProps) {
-  const mediaRef = useRef<HTMLDivElement>(null);
+/**
+ * One card on the Selected Work shelf. The shelf writes this item's 3D
+ * transform every frame, so React only owns its content and active state.
+ */
+export function WorkReelItem({
+  project,
+  index,
+  isActive,
+  onSelect,
+}: WorkReelItemProps) {
+  const mediaRef = useRef<HTMLSpanElement>(null);
 
   return (
-    <li className="work-reel__item" data-work-item>
+    <li
+      className={`work-shelf__item${isActive ? " work-shelf__item--active" : ""}`}
+      data-shelf-item
+    >
       <button
         type="button"
-        className="work-reel__button"
-        aria-label={`Open case study: ${project.title}`}
+        className="work-shelf__card"
+        aria-label={
+          isActive
+            ? `Open case study: ${project.title}`
+            : `Show ${project.title}`
+        }
+        aria-current={isActive ? "true" : undefined}
         onClick={() => {
-          if (mediaRef.current) onOpen(project, mediaRef.current);
+          if (mediaRef.current) onSelect(index, mediaRef.current);
         }}
       >
-        <div ref={mediaRef} className="work-reel__media">
+        <span ref={mediaRef} className="work-shelf__media" data-shelf-media>
           {project.image ? (
             <Image
               src={project.image}
               alt=""
               fill
-              sizes="(max-width: 767px) 78vw, 34vw"
-              className="work-reel__image"
+              sizes="(max-width: 767px) 68vw, 30vw"
+              className="work-shelf__image"
               draggable={false}
             />
           ) : (
-            <span className="work-reel__placeholder" aria-hidden="true">
+            <span className="work-shelf__placeholder" aria-hidden="true">
               ⌨
             </span>
           )}
-          <span className="work-reel__scrim" aria-hidden="true" />
-        </div>
-
-        <div className="work-reel__meta">
-          <h3 className="work-reel__title">{project.title}</h3>
-          <p className="work-reel__tags">{project.tags.join(" / ")}</p>
-        </div>
+          <span className="work-shelf__sheen" aria-hidden="true" />
+          <span className="work-shelf__index" aria-hidden="true">
+            {String(index + 1).padStart(2, "0")}
+          </span>
+          {isActive ? (
+            <span className="work-shelf__badge" aria-hidden="true">
+              View project
+            </span>
+          ) : null}
+        </span>
       </button>
     </li>
   );

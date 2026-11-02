@@ -9,8 +9,6 @@ import {
   type HeroGlassRenderer,
   type TriangleLedMode,
 } from "./HeroGlassFractal";
-import { HeroChapters } from "./HeroChapters";
-import { ShuxWordmark } from "./ShuxWordmark";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { onIntroComplete } from "@/lib/intro/introEvents";
 import { subscribeAudioEnergy } from "@/lib/audio/audioEnergyBus";
@@ -24,12 +22,9 @@ import { pageProgressToLedMode } from "@/lib/hero/vgpuGlass/ledBackdrop/heroLedS
 
 gsap.registerPlugin(ScrollTrigger, Observer);
 
-const CHAPTER_WINDOW = 0.25;
-const CHAPTER_FADE = 0.07;
-
-// One endpoint per hero chapter, so the glass flips with each chapter the way
-// the vgpu example's Fractal / Orb switch does.
-const HERO_SHAPES = "orb fractal orb fractal";
+// Shape beats across the hero scroll, like the vgpu example's Fractal / Orb
+// switch.
+const HERO_SHAPES = "orb fractal";
 
 // A zone takes over when its top edge crosses this line of the viewport.
 const ZONE_LINE = "55%";
@@ -38,7 +33,6 @@ export function ScrollHeroLayout({ children }: { children: React.ReactNode }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const stickyRef = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
-  const wordmarkRef = useRef<HTMLHeadingElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
   const cueRef = useRef<HTMLDivElement>(null);
   const glassFractalRef = useRef<HTMLDivElement>(null);
@@ -59,10 +53,8 @@ export function ScrollHeroLayout({ children }: { children: React.ReactNode }) {
     const track = trackRef.current;
     if (reducedMotion || !track) return;
 
-    const wordmark = wordmarkRef.current;
     const glow = glowRef.current;
     const glassFractal = glassFractalRef.current;
-    if (!wordmark) return;
 
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
@@ -75,20 +67,14 @@ export function ScrollHeroLayout({ children }: { children: React.ReactNode }) {
         },
       });
 
-      tl.to(
-        wordmark,
-        {
-          scale: 0.72,
-          y: "-8vh",
-          opacity: 0.55,
-          ease: "none",
-          duration: 1,
-        },
-        0,
-      );
-
+      // Subtle handoff into About: the glow drifts up, widens and fades out
+      // as the section arrives.
       if (glow) {
-        tl.to(glow, { opacity: 0.15, ease: "none", duration: 1 }, 0);
+        tl.to(
+          glow,
+          { opacity: 0, scale: 1.3, y: "-10vh", ease: "power1.in", duration: 1 },
+          0,
+        );
       }
 
       if (glassFractal) {
@@ -96,26 +82,6 @@ export function ScrollHeroLayout({ children }: { children: React.ReactNode }) {
         // stay legible after the hero fade rather than dropping to 0.35.
         tl.to(glassFractal, { opacity: 0.55, ease: "none", duration: 1 }, 0);
       }
-
-      const chapters = gsap.utils.toArray<HTMLElement>("[data-hero-chapter]");
-
-      chapters.forEach((chapter, index) => {
-        const start = index * CHAPTER_WINDOW;
-
-        gsap.set(chapter, { opacity: 0, y: 36 });
-
-        tl.to(
-          chapter,
-          { opacity: 1, y: 0, ease: "none", duration: CHAPTER_FADE },
-          start,
-        );
-
-        tl.to(
-          chapter,
-          { opacity: 0, y: -36, ease: "none", duration: CHAPTER_FADE },
-          start + CHAPTER_WINDOW - CHAPTER_FADE,
-        );
-      });
     }, track);
 
     return () => ctx.revert();
@@ -143,7 +109,7 @@ export function ScrollHeroLayout({ children }: { children: React.ReactNode }) {
     return () => observer.kill();
   }, [reducedMotion]);
 
-  // Scroll is the switch. Each `[data-glass-shape]` zone (hero chapters, then
+  // Scroll is the switch. Each `[data-glass-shape]` zone (the hero, then
   // every section) selects an endpoint, and the renderer eases between them
   // with the example's fixed-duration easeOutQuart morph.
   useEffect(() => {
@@ -239,11 +205,10 @@ export function ScrollHeroLayout({ children }: { children: React.ReactNode }) {
           <div className="scroll-hero__stage">
             <div
               ref={glowRef}
-              className="hero-wordmark-glow"
+              className="hero-glow"
               aria-hidden="true"
             />
-            <ShuxWordmark ref={wordmarkRef} />
-            <HeroChapters reducedMotion={reducedMotion} />
+            <h1 className="hero-title">OH SHUX</h1>
           </div>
 
           {reducedMotion ? null : (

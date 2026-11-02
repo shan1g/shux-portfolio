@@ -281,64 +281,22 @@
     }
   }
 
-  &__facts {
-    display: none;
-    grid-template-columns: auto 1fr;
-    gap: @space-1 @space-4;
-    margin: 0;
-    font-size: 0.8125rem;
-
-    @media (min-width: @bp-md) {
-      display: grid;
-    }
-
-    dt {
-      font-family: var(--font-geist-mono), ui-monospace, monospace;
-      font-size: 0.6875rem;
-      letter-spacing: 0.14em;
-      line-height: 1.6;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-
-    dd {
-      margin: 0;
-      color: var(--foreground);
-    }
-  }
-
-  &__notes {
-    display: none;
-    width: 100%;
-    flex-direction: column;
+  &__tags {
+    display: flex;
+    flex-wrap: wrap;
     gap: @space-2;
     margin: 0;
-    padding: @space-4 0 0;
-    border-top: 1px solid var(--foreground-10);
+    padding: 0;
     list-style: none;
-
-    @media (min-width: @bp-md) {
-      display: flex;
-    }
   }
 
-  &__note {
-    display: flex;
-    align-items: baseline;
-    gap: @space-3;
-    font-size: 0.875rem;
-    line-height: 1.45;
-    color: var(--foreground);
-
-    &::before {
-      content: "";
-      flex: 0 0 auto;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--accent);
-      transform: translateY(-2px);
-    }
+  &__tag {
+    border-radius: 9999px;
+    border: 1px solid var(--foreground-10);
+    background: var(--foreground-5);
+    padding: @space-1 @space-3;
+    font-size: 0.75rem;
+    color: var(--muted);
   }
 
   &__open {
@@ -454,21 +412,11 @@
     }
   }
 
-  // Short desktop windows: drop the extras so the credits fit above the
-  // controls. These come last so they win over the md rules above.
+  // Short desktop windows: a shorter lead keeps the credits above the
+  // controls. This comes last so it wins over the md rule above.
   @media (min-width: @bp-md) and (max-height: 760px) {
-    &__notes {
-      display: none;
-    }
-
     &__lead {
       -webkit-line-clamp: 3;
-    }
-  }
-
-  @media (min-width: @bp-md) and (max-height: 600px) {
-    &__facts {
-      display: none;
     }
   }
 }
@@ -560,33 +508,51 @@
     }
   }
 
-  // The close button stays reachable while the case study scrolls.
+  // The close button stays reachable while the case study scrolls. On mobile
+  // it sits at the bottom in thumb reach (ordered after the content, sticky to
+  // the panel's bottom edge); on desktop it returns to the top right.
   &__bar {
     position: sticky;
-    top: 0;
+    bottom: calc(@space-4 + var(--safe-bottom));
     z-index: 2;
+    order: 1;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: center;
     gap: @space-4;
+    margin-top: auto;
 
     @media (min-width: @bp-lg) {
+      top: 0;
+      bottom: auto;
+      order: 0;
+      justify-content: flex-end;
+      margin-top: 0;
       grid-column: 1 / -1;
     }
   }
 
   &__close {
-    min-height: 2.5rem;
-    padding: @space-2 @space-5;
+    min-height: 3rem;
+    padding: @space-3 @space-8;
     border-radius: 9999px;
     border: 1px solid var(--glass-border);
     background: var(--glass-bg);
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 12px 30px -12px var(--glass-shadow);
     color: var(--foreground);
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
     transition: color @transition-fast, border-color @transition-fast;
+
+    @media (min-width: @bp-lg) {
+      min-height: 2.5rem;
+      padding: @space-2 @space-5;
+      font-size: 0.8125rem;
+      box-shadow: none;
+    }
 
     &:hover {
       color: var(--accent);
@@ -652,63 +618,6 @@
     max-width: 44rem;
     margin: 0;
     font-size: 1rem;
-    line-height: 1.6;
-    color: var(--muted);
-  }
-
-  &__highlights {
-    display: grid;
-    gap: @space-2;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  &__highlight {
-    display: flex;
-    align-items: baseline;
-    gap: @space-3;
-    font-size: 0.9375rem;
-    font-weight: 500;
-    color: var(--foreground);
-
-    &::before {
-      content: "";
-      flex: 0 0 auto;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--accent);
-      transform: translateY(-2px);
-    }
-  }
-
-  &__chapters {
-    display: grid;
-    gap: @space-4;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  &__chapter {
-    list-style: none;
-    border-top: 1px solid var(--foreground-10);
-    padding-top: @space-4;
-  }
-
-  &__chapter-label {
-    margin: 0 0 @space-2;
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
-    font-size: 0.6875rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--accent);
-  }
-
-  &__chapter-body {
-    margin: 0;
-    font-size: 0.9375rem;
     line-height: 1.6;
     color: var(--muted);
   }

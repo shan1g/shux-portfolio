@@ -45,6 +45,13 @@ const LAST_INDEX = projects.length - 1;
 // Pinned scroll distance per project, as a fraction of the viewport height.
 const STEP_VIEWPORTS = 0.6;
 
+// Extra pinned scroll, in viewports, before the first project and after the
+// last. The shelf holds on the end project through it, so the first card
+// isn't already moving when the pin starts and the last one isn't swept away
+// the moment it arrives.
+const HOLD_VIEWPORTS = 0.45;
+const PIN_VIEWPORTS = STEP_VIEWPORTS * LAST_INDEX + HOLD_VIEWPORTS * 2;
+
 // Fraction at each end of a step during which the shelf holds on a project.
 // Kept small so scrolling moves the row continuously instead of hesitating
 // and jumping; the scroll-end snap does the resting.
@@ -108,6 +115,18 @@ function dwell(value: number): number {
 const clampIndex = (value: number) =>
   Math.min(LAST_INDEX, Math.max(0, value));
 
+// Unclamped shelf position, in projects, for a pin progress. Below 0 or above
+// LAST_INDEX means the scroll is in one of the hold zones.
+const progressToPosition = (progress: number) =>
+  (progress * PIN_VIEWPORTS - HOLD_VIEWPORTS) / STEP_VIEWPORTS;
+
+// Page scroll that brings project `index` to the front.
+function scrollForIndex(trigger: ScrollTrigger, index: number): number {
+  const progress =
+    (HOLD_VIEWPORTS + clampIndex(index) * STEP_VIEWPORTS) / PIN_VIEWPORTS;
+  return trigger.start + (trigger.end - trigger.start) * progress;
+}
+
 function readGeometry(element: HTMLElement): LineGeometry {
   const style = getComputedStyle(element);
   const read = (name: string, fallback: number) => {
@@ -140,11 +159,7 @@ export function WorkVelocityGallery() {
   const goTo = useCallback((index: number) => {
     const trigger = triggerRef.current;
     if (!trigger || LAST_INDEX <= 0) return;
-    scrollToY(
-      trigger.start +
-        (trigger.end - trigger.start) * (clampIndex(index) / LAST_INDEX),
-      { immediate: true },
-    );
+    scrollToY(scrollForIndex(trigger, index), { immediate: true });
   }, []);
 
   const openIndex = useCallback((index: number, origin: HTMLElement | null) => {
@@ -205,9 +220,6 @@ export function WorkVelocityGallery() {
     let suppressClickUntil = 0;
     let press: Press | null = null;
 
-    const positionFor = (index: number, self: ScrollTrigger) =>
-      self.start + (self.end - self.start) * (index / LAST_INDEX);
-
     // Rest on a project once scrolling stops. Without this the shelf can
     // stop mid-step (PageDown, a short flick), leaving the active card half
     // exited and blurred while the next one sits near the front slot.
@@ -222,10 +234,13 @@ export function WorkVelocityGallery() {
           scheduleSnap(self);
           return;
         }
-        const position = self.progress * LAST_INDEX;
+        const position = progressToPosition(self.progress);
+        // In a hold zone the shelf is already resting on the end project;
+        // snapping there would drag the reader back against their scroll.
+        if (position <= 0 || position >= LAST_INDEX) return;
         const nearest = Math.round(position);
         if (Math.abs(position - nearest) >= 0.002) {
-          scrollToY(positionFor(nearest, self), { immediate: true });
+          scrollToY(scrollForIndex(self, nearest), { immediate: true });
         }
       }, SNAP_DELAY_MS);
     };
@@ -233,8 +248,7 @@ export function WorkVelocityGallery() {
     const trigger = ScrollTrigger.create({
       trigger: scroll,
       start: "top top",
-      end: () =>
-        `+=${Math.round(window.innerHeight * STEP_VIEWPORTS * LAST_INDEX)}`,
+      end: () => `+=${Math.round(window.innerHeight * PIN_VIEWPORTS)}`,
       pin: sticky,
       pinSpacing: true,
       pinType: "fixed",
@@ -243,12 +257,12 @@ export function WorkVelocityGallery() {
       onUpdate: (self) => {
         // While dragging, the finger owns the head.
         if (dragging) return;
-        state.target = dwell(self.progress * LAST_INDEX);
+        state.target = dwell(clampIndex(progressToPosition(self.progress)));
         scheduleSnap(self);
       },
     });
     triggerRef.current = trigger;
-    state.target = dwell(trigger.progress * LAST_INDEX);
+    state.target = dwell(clampIndex(progressToPosition(trigger.progress)));
     state.head = state.target;
 
     const layout = () => {
@@ -433,7 +447,7 @@ export function WorkVelocityGallery() {
       }
       const index = clampIndex(next);
       state.target = index;
-      scrollToY(positionFor(index, trigger), { immediate: true });
+      scrollToY(scrollForIndex(trigger, index), { immediate: true });
     };
 
     const onClickCapture = (event: MouseEvent) => {
@@ -547,7 +561,6 @@ export function WorkVelocityGallery() {
   }
 
   const current = projects[active] ?? projects[0];
-  const notes = current.highlights ?? [];
 
   return (
     <Fragment>
@@ -580,23 +593,13 @@ export function WorkVelocityGallery() {
             <div key={current.title} className="work-shelf__credits-inner">
               <h3 className="work-shelf__title">{current.title}</h3>
               <p className="work-shelf__lead">{current.description}</p>
-              <dl className="work-shelf__facts">
-                <dt>Client</dt>
-                <dd>{current.client}</dd>
-                <dt>Discipline</dt>
-                <dd>{current.tags.join(", ")}</dd>
-                <dt>Source</dt>
-                <dd>{current.source === "github" ? "GitHub" : "Behance"}</dd>
-              </dl>
-              {notes.length > 0 ? (
-                <ul className="work-shelf__notes">
-                  {notes.slice(0, 2).map((note) => (
-                    <li key={note} className="work-shelf__note">
-                      {note}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
+              <ul className="work-shelf__tags">
+                {current.tags.map((tag) => (
+                  <li key={tag} className="work-shelf__tag">
+                    {tag}
+                  </li>
+                ))}
+              </ul>
               <button
                 type="button"
                 className="work-shelf__open"

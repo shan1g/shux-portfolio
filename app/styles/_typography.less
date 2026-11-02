@@ -30,11 +30,15 @@
   color: var(--accent);
 }
 
+// Scales with the viewport so long titles ("Capabilities") fit a phone
+// screen; the break is a last resort for very narrow widths.
 .text-section-title {
   margin: 0;
-  font-size: 5.25rem;
+  font-size: clamp(2.5rem, 10.5vw, 5.25rem);
   font-weight: 600;
+  line-height: 1.05;
   letter-spacing: -0.025em;
+  overflow-wrap: break-word;
   color: var(--foreground);
 }
 

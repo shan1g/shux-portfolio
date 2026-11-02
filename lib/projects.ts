@@ -158,7 +158,7 @@ export const projects: Project[] = [
     href: "https://keyboard-learner.vercel.app/",
     tags: ["TypeScript", "Education", "Side project"],
     source: "github",
-    image: "/work/keyboard-learner.jpg",
+    image: "/work/keyboard-learner.png",
   },
 ];
 

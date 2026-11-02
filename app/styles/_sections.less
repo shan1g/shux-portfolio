@@ -21,6 +21,12 @@
   }
 }
 
+// About follows the hero directly. Its surface fades in from the top so the
+// glass backdrop dissolves into the section instead of meeting a hard edge.
+#about::before {
+  mask-image: linear-gradient(to bottom, transparent, #000 40vh);
+}
+
 // Eyebrow with a scroll-linked rail showing how far through the section the
 // reader is.
 .section-eyebrow {

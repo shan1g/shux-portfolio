@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import gsap from "gsap";
 import { Flip } from "gsap/Flip";
@@ -25,8 +26,6 @@ export function WorkDetailOverlay({
   const mediaRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const reducedMotion = useReducedMotion();
-  const chapters = project.chapters ?? [];
-  const highlights = project.highlights ?? [];
 
   const close = useCallback(() => {
     const root = rootRef.current;
@@ -127,7 +126,9 @@ export function WorkDetailOverlay({
     return () => document.removeEventListener("focusin", onFocusIn);
   }, []);
 
-  return (
+  // Portalled to <body>: inside .page-content (z-index 20) the dialog was
+  // trapped under the fixed nav and audio pill despite its own z-index.
+  return createPortal(
     <div
       ref={rootRef}
       role="dialog"
@@ -187,31 +188,6 @@ export function WorkDetailOverlay({
             {project.description}
           </p>
 
-          {highlights.length > 0 ? (
-            <ul className="work-detail__highlights" data-overlay-fade>
-              {highlights.map((highlight) => (
-                <li key={highlight} className="work-detail__highlight">
-                  {highlight}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-
-          {chapters.length > 0 ? (
-            <ul className="work-detail__chapters">
-              {chapters.map((chapter) => (
-                <li
-                  key={chapter.label}
-                  className="work-detail__chapter"
-                  data-overlay-fade
-                >
-                  <p className="work-detail__chapter-label">{chapter.label}</p>
-                  <p className="work-detail__chapter-body">{chapter.body}</p>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-
           <ul className="work-detail__tags" data-overlay-fade>
             {project.tags.map((tag) => (
               <li key={tag} className="work-detail__tag">
@@ -233,6 +209,7 @@ export function WorkDetailOverlay({
           </a>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -208,7 +208,7 @@ export function ScrollHeroLayout({ children }: { children: React.ReactNode }) {
               className="hero-glow"
               aria-hidden="true"
             />
-            <h1 className="hero-title">OH SHUX</h1>
+            <h1 className="hero-title">SHUX — Shan Gray, front-end engineer</h1>
           </div>
 
           {reducedMotion ? null : (

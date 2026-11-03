@@ -47,9 +47,9 @@ export function ContactSection() {
 
         <div ref={ref} className="outro-body">
           <p data-reveal className="text-lead">
-            Open to collaborations, freelance projects, and conversations about
-            interaction design. Not always in the spotlight — usually out there
-            on the edge.
+            Open to collaborations, freelance builds, and conversations about
+            front-end engineering. Not always in the spotlight — usually out
+            there on the edge.
           </p>
 
           <ul className="outro-links" onPointerLeave={() => setHovered(null)}>

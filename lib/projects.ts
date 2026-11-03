@@ -171,13 +171,13 @@ export type Capability = {
 export const capabilities: Capability[] = [
   {
     index: "01",
-    title: "Interaction design",
-    body: "Flows, states, and edge cases mapped before a pixel is drawn — so the build has nothing left to guess.",
+    title: "Front-end engineering",
+    body: "Component-driven builds in JavaScript, TypeScript, Next.js and Vue — structured so the next developer can pick them up without a tour.",
   },
   {
     index: "02",
-    title: "Front-end craft",
-    body: "Responsive interfaces with real performance budgets, semantic structure, and implementation that survives handover.",
+    title: "Campaign platforms",
+    body: "Launch-grade builds with CMS, CRM and API integrations that hold up under traffic spikes and last-minute scope changes.",
   },
   {
     index: "03",
@@ -186,13 +186,13 @@ export const capabilities: Capability[] = [
   },
   {
     index: "04",
-    title: "Campaign platforms",
-    body: "Launch-grade builds that hold up under traffic spikes, CRM integrations, and last-minute scope changes.",
+    title: "Accessibility & performance",
+    body: "Semantic markup, keyboard and screen-reader support, and real performance budgets checked before launch, not after.",
   },
   {
     index: "05",
     title: "Real-time graphics",
-    body: "WebGPU and canvas work used with intent — atmosphere and depth that still degrade cleanly everywhere else.",
+    body: "WebGL, WebGPU and canvas work used with intent — immersive atmosphere and depth that still degrade cleanly everywhere else.",
   },
 ];
 

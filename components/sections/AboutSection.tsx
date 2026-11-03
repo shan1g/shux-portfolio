@@ -7,8 +7,8 @@ import { SectionEyebrow } from "@/components/ui/SectionEyebrow";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 const STATEMENT_LINES = [
-  "Oh shux — shanenigains,",
-  "creative, deez flex.",
+  "Oh shux — I engineer",
+  "the front end.",
   "Interfaces that feel native",
   "on every single screen.",
 ];
@@ -39,14 +39,16 @@ export function AboutSection() {
 
         <div ref={ref} className="about-support">
           <p data-reveal className="text-lead">
-            My name is <strong className="text-strong">Shan Gray</strong>, based
-            in South Africa. I build digital experiences where usability, motion,
-            and craft meet.
+            My name is <strong className="text-strong">Shan Gray</strong>, a
+            front-end engineer in Johannesburg, South Africa. I’ve built for the
+            web since 2010 and am Development Lead at Ogilvy South Africa,
+            shipping campaign platforms, booking flows and interactive
+            experiences.
           </p>
           <p data-reveal className="text-lead text-spaced-sm">
-            SHUX is my personal studio and UX manifesto: a place to explore what
-            good interaction design should feel like — clear, considerate, and
-            quietly delightful.
+            SHUX is my personal playground: a place to explore what front-end
+            engineering should feel like — fast, accessible, and quietly
+            delightful.
           </p>
         </div>
       </div>

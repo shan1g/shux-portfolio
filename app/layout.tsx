@@ -14,15 +14,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SHUX — Shan Gray",
+  title: "SHUX — Shan Gray, Front-end Engineer",
   description:
-    "Personal portfolio by Shan Gray. Interaction design and front-end craft — experiences that feel native on every screen.",
+    "Portfolio of Shan Gray, Development Lead at Ogilvy South Africa. Front-end engineering, motion and campaign platforms — interfaces that feel native on every screen.",
   metadataBase: new URL("https://shux.dev"),
   manifest: "/manifest.json",
   openGraph: {
-    title: "SHUX — Shan Gray",
+    title: "SHUX — Shan Gray, Front-end Engineer",
     description:
-      "Interaction design and front-end craft. Clean, accessible, app-like web experiences.",
+      "Front-end engineering from Johannesburg: fast, accessible, app-like web experiences.",
     type: "website",
   },
 };

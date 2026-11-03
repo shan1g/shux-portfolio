@@ -7,7 +7,7 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const PHRASE = "LET'S CREATE · OH SHUX · SHANENIGAINS · DEEZ FLEX";
+const PHRASE = "LET'S BUILD · OH SHUX · FRONT-END · SHANENIGAINS";
 
 export function OutroMarquee() {
   const trackRef = useRef<HTMLDivElement>(null);

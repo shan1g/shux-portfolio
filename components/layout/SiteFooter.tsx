@@ -5,7 +5,7 @@ export function SiteFooter() {
         <div className="site-footer__brand">
           <p className="site-footer__mark">SHUX</p>
           <p className="site-footer__tagline">
-            Interaction design and front-end craft, from South Africa.
+            Front-end engineering from Johannesburg, South Africa.
           </p>
         </div>
       </div>

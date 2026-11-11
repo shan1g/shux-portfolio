@@ -3,7 +3,11 @@
 // warm glow pooled on a dark glossy floor, bloom on the glows. The chameleon is turned half round (root.rotation.y = pi)
 // so its head points left in frame, as in the reference.
 // ?explode=0..1 pins the teardown; ?curl= the tail's curl; ?exposure= ?bloom= ?glow= ?az= ?el= ?d= tune the look.
-// Timeline: assembled 0-3 s, coming apart 3-6.5 s, held apart, back together 9-11.5 s.
+// ?tour=0 holds the still's camera through the film; a pinned ?explode= holds it too.
+// The film (timeline.json, which score.py reads as well): assembled until `head`, coming apart until `exploded` (the
+// head and the casque first, then the eyes and the LEDs, then the legs and the tail, by each part's window in
+// chameleon.js), held apart, back together from `assemble` until `hero`. Every beat has its own camera (SHOTS below);
+// before `head` it is the approved still's, so the round 6 still at 1.5 s is unchanged.
 import * as THREE from 'three';
 import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';
 import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
@@ -11,14 +15,17 @@ import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {runSim} from 'cutaway-kit/runtime.js';
 import {buildChameleon, FLOOR_Y} from './chameleon.js';
+import TL from './timeline.json';
 
-const DURATION = 12;
+const BEAT = Object.fromEntries(TL.script.map((b) => [b.act, b.t]));
+const DURATION = TL.duration;
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 const sstep = (x) => {
   const u = clamp(x, 0, 1);
   return u * u * (3 - 2 * u);
 };
-const explodeAt = (t) => sstep((t - 3) / 3.5) * (1 - sstep((t - 9) / 2.5));
+const explodeAt = (t) =>
+  sstep((t - BEAT.head) / (BEAT.exploded - BEAT.head)) * (1 - sstep((t - BEAT.assemble) / (BEAT.hero - BEAT.assemble)));
 
 function canvasTex(w, h, draw) {
   const cv = document.createElement('canvas');
@@ -239,6 +246,48 @@ runSim(
     };
     place();
 
+    // One camera per beat, aimed at its own part (world frame as above: the head at -x, the near flank at +z). Each shot
+    // eases in from the last over MOVE seconds, then pushes in (push: the share of d closed over its hold) and orbits
+    // (radians over its hold). The first is the still's own camera, held, so frames before `head` match the still.
+    const BASE = {...CAM};
+    const shot = (t, tx, ty, tz, az, el, d, push = 0, orbit = 0) => ({t, tx, ty, tz, az, el, d, push, orbit});
+    // Each camera starts its move LEAD seconds before its beat, so it has arrived while its part is still moving (the
+    // parts' windows run ahead of the beats). The still's camera holds until head - LEAD, well after the still's 1.5 s.
+    // No shot looks down more than about 17 degrees: the rose rim light sits about 41 degrees up behind the body, and
+    // a steeper camera from the front sees its reflection spread over the glossy floor as a magenta glow (a 26 degree
+    // exploded shot did).
+    const LEAD = 0.6;
+    const SHOTS = [
+      shot(0, BASE.tx, BASE.ty, BASE.tz, BASE.az, BASE.el, BASE.d),
+      // the head sliding off forward and the casque lifting: from ahead of the snout, a little high
+      shot(BEAT.head - LEAD, -0.9, 0.05, 0.15, 2.55, 0.3, 3.8, 0.08, -0.12),
+      // the near eye backing out of the head: close, nearly side-on, at eye height
+      shot(BEAT.eye - LEAD, -0.95, 0.1, 0.4, 1.78, 0.14, 2.6, 0.1, 0.1),
+      // the legs swinging out from the flank and the tail opening: low, from behind the hip
+      shot(BEAT.legs - LEAD, 0.35, -0.35, 0.35, 1.15, 0.1, 4.0, 0.06, 0.15),
+      // the whole teardown hanging apart: wide, a little above the still's height, a slow orbit
+      shot(BEAT.exploded - LEAD, 0.1, -0.2, 0.1, 2.15, 0.22, 7.6, 0.05, -0.3),
+      // going back together: from the other quarter
+      shot(BEAT.assemble - LEAD, 0.15, -0.22, 0, 1.55, 0.2, 6.4, 0.04, 0.2),
+      // whole again: the still's own angle, pushed in a touch
+      shot(BEAT.hero - LEAD, BASE.tx, BASE.ty, BASE.tz, BASE.az, BASE.el, BASE.d * 0.96, 0.04, 0),
+    ];
+    const MOVE = 1.1;
+    const KEYS = ['tx', 'ty', 'tz', 'az', 'el', 'd'];
+    const drifted = (s, u) => ({...s, d: s.d * (1 - s.push * u), az: s.az + s.orbit * u});
+    const shotAt = (t) => {
+      let i = 0;
+      while (i + 1 < SHOTS.length && t >= SHOTS[i + 1].t) i++;
+      const cur = SHOTS[i];
+      const end = i + 1 < SHOTS.length ? SHOTS[i + 1].t : DURATION;
+      const now = drifted(cur, sstep((t - cur.t) / (end - cur.t)));
+      if (!i) return now;
+      const from = drifted(SHOTS[i - 1], 1);
+      const k = sstep((t - cur.t) / MOVE);
+      return Object.fromEntries(KEYS.map((key) => [key, from[key] + (now[key] - from[key]) * k]));
+    };
+    const tour = num('tour', 1) && !q.has('explode');
+
     const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(4, 4, {type: THREE.HalfFloatType, samples: 4}));
     composer.addPass(new RenderPass(scene, camera));
     const bloom = new UnrealBloomPass(new THREE.Vector2(1600, 900), num('bloom', 0.3), 0.4, num('bthresh', 2.2));
@@ -286,7 +335,7 @@ runSim(
       back.scale.set(h * camera.aspect, h, 1);
     };
     resize();
-    window.CHAM = {cham, mirror, camera, scene, CAM, bloom, key, rose, front, under, pool};
+    window.CHAM = {cham, mirror, camera, scene, CAM, bloom, key, rose, front, under, pool, shotAt};
 
     const curl = num('curl', 1);
     return {
@@ -295,6 +344,7 @@ runSim(
         const ex = q.has('explode') ? Number(q.get('explode')) : explodeAt(t);
         cham.pose({t, spinT: t, explode: ex, curl});
         if (mirror) mirror.pose({t, spinT: t, explode: ex, curl});
+        if (tour) Object.assign(CAM, shotAt(t));
         place();
         composer.render();
         return {};

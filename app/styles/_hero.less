@@ -248,21 +248,53 @@
 // screen. It sits over the content but under the nav, and never takes
 // clicks. After load it walks in from the nearer edge of the screen; the
 // renderer shows the canvas as it starts.
+//
+// On phones the nav pill spans nearly the whole width, so it climbs the left
+// edge of the screen instead: the strip stands up the left side and its
+// canvas is turned a quarter clockwise, so the canvas's bottom edge (the
+// floor) is the screen's left edge and its track runs down the screen. The
+// renderer sizes from the canvas's untransformed layout, so it needs nothing
+// else. From md up it walks along the bottom.
+@walker-climb-w: 4.5rem;
+
 .chameleon-walker {
   position: fixed;
-  right: 0;
-  bottom: var(--safe-bottom);
-  left: 0;
+  top: 0;
+  left: var(--safe-left);
   z-index: @z-walker;
-  height: clamp(5.5rem, 10vw, 9rem);
+  width: @walker-climb-w;
+  height: 100vh;
+  height: 100dvh;
   pointer-events: none;
 
   &__canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
     display: block;
-    width: 100%;
-    height: 100%;
+    width: 100vh;
+    width: 100dvh;
+    height: @walker-climb-w;
     opacity: 0;
     visibility: hidden;
+    transform-origin: 0 0;
+    transform: translateX(@walker-climb-w) rotate(90deg);
+  }
+
+  @media (min-width: @bp-md) {
+    top: auto;
+    right: 0;
+    bottom: var(--safe-bottom);
+    left: 0;
+    width: auto;
+    height: clamp(5.5rem, 10vw, 9rem);
+
+    &__canvas {
+      position: static;
+      width: 100%;
+      height: 100%;
+      transform: none;
+    }
   }
 }
 

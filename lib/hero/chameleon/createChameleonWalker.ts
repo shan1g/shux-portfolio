@@ -2,18 +2,31 @@
 // seen side-on through a flat camera, a fraction of the size. Once the page has loaded it walks in from the nearer
 // edge of the screen to where scroll wants it. From then on scroll says where along the screen it should be; the loop
 // walks it there on a diagonal trot (left front with right hind, then right front with left hind), and it turns to
-// face the way it is walking after a short step backwards. Its eyes swivel on their own and its tail sways.
+// face the way it is walking after a short step backwards. Its eyes swivel on their own and its tail sways. Now and
+// then, standing still, it blends into the page behind it for a few seconds (camouflage.ts).
 import * as THREE from "three";
 import type { Theme } from "@/components/theme/ThemeProvider";
 import { buildChameleon, FLOOR_Y, legHome } from "./chameleon.js";
+import { createCamouflage } from "./camouflage";
+
+/** A box on screen, in client pixels (a DOMRect will do). */
+export type ScreenBox = Pick<DOMRectReadOnly, "left" | "right" | "top" | "bottom">;
 
 export interface ChameleonWalkerRenderer {
   /** Resolves once the shaders are compiled. Nothing shows until enter(). */
   readonly ready: Promise<void>;
   /** Walk in from the nearer edge of the screen to where scroll wants it. Only the first call counts. */
   enter(): void;
-  /** Where along the screen it should be: 0 the left end of its track, 1 the right end. */
+  /**
+   * Where along the screen it should be: 0 the left end of its track, 1 the right end. On phones the strip climbs the
+   * left edge of the screen, and 0 is the top, 1 the bottom.
+   */
   setPosition(value: number, immediate?: boolean): void;
+  /**
+   * The track position nearest `preferred` at which its whole body stands clear of the given boxes (only those over
+   * its strip count), so it does not come to rest behind them. The nearer end of the track when nowhere is clear.
+   */
+  clearPosition(preferred: number, avoid: readonly ScreenBox[]): number;
   applyTheme(theme: Theme): void;
   dispose(): void;
 }
@@ -44,6 +57,10 @@ const MID_X = -0.35;
 // stay on screen at the ends. It starts its walk in this far past the edge, wholly off screen.
 const EDGE = 1.9;
 const OFFSTAGE = 2.1;
+// Half the body's length round its middle (the snout 1.65 in front, the tail's spiral about 1.55 behind): the
+// camouflage's wave runs over this, and clearPosition keeps it, plus CLEAR_MARGIN, clear of what it avoids.
+const BODY_HALF = 1.65;
+const CLEAR_MARGIN = 0.1;
 // The gait: how far a planted foot travels per step (body units; the legs reach about 0.86 from the hip), the share
 // of a step each foot is down, the swing's lift and the body's bob.
 const STRIDE = 0.36;
@@ -256,6 +273,25 @@ export function createChameleonWalker({ canvas, theme }: ChameleonWalkerOptions)
   });
   scene.add(chameleon.root);
 
+  // Now and then it blends into the page (camouflage.ts). The eyes and the LEDs keep a hint; the rest all but goes.
+  const camo = createCamouflage(canvas, theme, BODY_HALF);
+  const eyeMaterials = new Set<THREE.Material>([
+    chameleon.M.lens,
+    chameleon.M.iris,
+    chameleon.M.led,
+    ...seeThrough.values(),
+  ]);
+  const camouflaged = new Set<THREE.Material>();
+  chameleon.root.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+      if (camouflaged.has(m)) continue;
+      camouflaged.add(m);
+      camo.attach(m, eyeMaterials.has(m) ? "eyes" : "body");
+    }
+  });
+
   // A soft shadow under the body, so it stands on the bottom of the screen rather than floating over it.
   const shadowMaterial = new THREE.MeshBasicMaterial({
     map: canvasTexture(256, 256, (g, w, h) => {
@@ -336,7 +372,9 @@ export function createChameleonWalker({ canvas, theme }: ChameleonWalkerOptions)
     chameleon.root.rotation.y = yaw;
     chameleon.root.position.set(x - MID_X * Math.cos(yaw), -bob, MID_X * Math.sin(yaw));
     shadow.position.set(MID_X, FLOOR_Y + 0.003 + bob, 0);
-    shadowMaterial.opacity = shadowStrength;
+    // Blended in, its shadow all but goes too.
+    shadowMaterial.opacity = shadowStrength * (1 - 0.75 * camo.amount);
+    camo.place(x, Math.cos(yaw));
     // The tail uncurls a touch while it walks and breathes slowly while it stands.
     const curl = 1 - 0.06 * gait + 0.03 * Math.sin(elapsed * 0.8);
     chameleon.pose({ t: elapsed, spinT: elapsed, feet, curl });
@@ -374,6 +412,7 @@ export function createChameleonWalker({ canvas, theme }: ChameleonWalkerOptions)
 
     const busy = moving || yaw !== yawTarget || gait > 0.01;
     idleFor = busy ? 0 : idleFor + dt;
+    camo.update(dt, busy, arrived);
     return busy;
   };
 
@@ -392,8 +431,8 @@ export function createChameleonWalker({ canvas, theme }: ChameleonWalkerOptions)
       draw();
       lastDraw = now;
     }
-    // Standing still for a while: hold the last frame until scroll moves it.
-    if (idleFor > IDLE_SLEEP_S) {
+    // Standing still for a while: hold the last frame until scroll moves it (once any camouflage has played out).
+    if (idleFor > IDLE_SLEEP_S && !camo.pending) {
       last = 0;
       return;
     }
@@ -435,6 +474,7 @@ export function createChameleonWalker({ canvas, theme }: ChameleonWalkerOptions)
   const applyTheme = (next: Theme) => {
     renderer.toneMappingExposure = EXPOSURE[next];
     shadowStrength = SHADOW_OPACITY[next];
+    camo.setTheme(next);
     if (isReady && !disposed && started) draw();
   };
   applyTheme(theme);
@@ -476,6 +516,42 @@ export function createChameleonWalker({ canvas, theme }: ChameleonWalkerOptions)
       // A refresh snaps it to its spot, but never cuts its walk in short.
       if (immediate && (arrived || !started)) x = trackX();
       wake();
+    },
+    clearPosition(preferred, avoid) {
+      const want01 = clamp(preferred, 0, 1);
+      const strip = canvas.getBoundingClientRect();
+      const half = Math.max(0, viewW / 2 - EDGE);
+      if (!strip.width || !strip.height || !half) return want01;
+      // On phones the strip climbs the left edge (_hero.less turns the canvas a quarter clockwise; its layout size is
+      // unchanged), so the track runs down the screen instead of across it.
+      const climbing = strip.height > strip.width && canvas.clientWidth > canvas.clientHeight;
+      // Client pixels to world x along the track, and how far either side of its middle must stay clear.
+      const unit = (climbing ? strip.width : strip.height) / VIEW_H;
+      const centre = climbing ? strip.top + strip.height / 2 : strip.left + strip.width / 2;
+      const reach = BODY_HALF + CLEAR_MARGIN;
+      const blocked = avoid
+        .filter((b) =>
+          climbing
+            ? b.bottom > b.top && b.right > strip.left && b.left < strip.right
+            : b.right > b.left && b.bottom > strip.top && b.top < strip.bottom,
+        )
+        .map((b): [number, number] => {
+          const [lo, hi] = climbing ? [b.top, b.bottom] : [b.left, b.right];
+          return [(lo - centre) / unit - reach, (hi - centre) / unit + reach];
+        });
+      const want = half * (2 * want01 - 1);
+      const free = (v: number) =>
+        v >= -half - 1e-6 && v <= half + 1e-6 && blocked.every(([a, b]) => v <= a + 1e-6 || v >= b - 1e-6);
+      // The preferred spot, or the nearest edge of whatever blocks it; a tie goes right.
+      let best: number | null = null;
+      for (const v of [want, ...blocked.flat()]) {
+        if (!free(v)) continue;
+        const d = Math.abs(v - want);
+        const bestD = best === null ? Infinity : Math.abs(best - want);
+        if (d < bestD - 1e-6 || (Math.abs(d - bestD) <= 1e-6 && best !== null && v > best)) best = v;
+      }
+      if (best === null) return want01 < 0.5 ? 0 : 1;
+      return clamp((best / half + 1) / 2, 0, 1);
     },
     applyTheme,
     dispose() {

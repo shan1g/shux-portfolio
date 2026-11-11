@@ -18,8 +18,9 @@ const WALKER_MOUNT_DELAY_MS = 1500;
 // Once built, the walker waits this long, then walks in from the nearer edge
 // of the screen.
 const WALKER_ENTER_DELAY_MS = 700;
-// Where along its track it walks to at the top of the page: the middle,
-// which on a wide screen is the gap between the two words.
+// Where along its track it would like to stand at the top of the page: the
+// middle. restSpot() moves it aside when that is behind the nav pill or the
+// scroll cue.
 const WALKER_START = 0.5;
 // One crossing of the screen per this many viewport heights of scroll: it
 // walks to one end, turns, and walks back, for as long as the page goes on.
@@ -27,6 +28,24 @@ const CROSSING_VH = 1.6;
 // The walker is a full chameleon build, so it waits for idle time after the
 // first paint, but no longer than this.
 const WALKER_IDLE_TIMEOUT_MS = 2500;
+// What the walker should not come to rest behind: the nav pill (SiteNav) and
+// the scroll cue.
+const WALKER_AVOID = ".site-nav__bar, .hero-scroll-cue";
+
+// Where the walker stands at the top of the page: WALKER_START, or the
+// nearest spot clear of WALKER_AVOID.
+function restSpot(walker: ChameleonWalkerRenderer): number {
+  const boxes = Array.from(document.querySelectorAll(WALKER_AVOID), (el) =>
+    el.getBoundingClientRect(),
+  );
+  return walker.clearPosition(WALKER_START, boxes);
+}
+
+// The walker's place along the screen for a scroll offset, from its rest
+// spot.
+function walkerPosition(start: number, scroll: number): number {
+  return pingPong(start + scroll / (window.innerHeight * CROSSING_VH));
+}
 
 // 0 → 1 → 0 → 1 … as u climbs: the walker's place along the screen.
 function pingPong(u: number): number {
@@ -44,12 +63,16 @@ export function ScrollHeroLayout({ children }: { children: React.ReactNode }) {
   // for the next scroll event. Without this, a mid-page reload walks it to
   // the wrong place.
   const desiredPositionRef = useRef(WALKER_START);
+  // Where it stands at the top of the page, clear of the nav (restSpot).
+  const startRef = useRef(WALKER_START);
   const [walkerMounted, setWalkerMounted] = useState(false);
   const [readyWalker, setReadyWalker] =
     useState<ChameleonWalkerRenderer | null>(null);
   const reducedMotion = useReducedMotion();
 
   const handleWalkerReady = useCallback((renderer: ChameleonWalkerRenderer) => {
+    startRef.current = restSpot(renderer);
+    desiredPositionRef.current = walkerPosition(startRef.current, window.scrollY);
     renderer.setPosition(desiredPositionRef.current, true);
     setReadyWalker(renderer);
   }, []);
@@ -134,9 +157,12 @@ export function ScrollHeroLayout({ children }: { children: React.ReactNode }) {
     if (reducedMotion) return;
 
     const apply = (scroll: number, immediate: boolean) => {
-      const position = pingPong(
-        WALKER_START + scroll / (window.innerHeight * CROSSING_VH),
-      );
+      // A refresh (a resize, or the intro's) can move the nav, so the rest
+      // spot is found again.
+      if (immediate && walkerRef.current) {
+        startRef.current = restSpot(walkerRef.current);
+      }
+      const position = walkerPosition(startRef.current, scroll);
       desiredPositionRef.current = position;
       // Snap on refreshes: a resize or the intro's ScrollTrigger.refresh()
       // should not read as a walk.

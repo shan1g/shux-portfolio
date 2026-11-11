@@ -1,0 +1,38 @@
+// The chrome hero spider's styles, saved from app/styles/_hero.less when the site's spider was removed.
+// Its parent (.scroll-hero__stage) was the hero's pinned stage; with reduced motion that stage is unpinned.
+
+// The chrome hero spider. Its canvas is transparent, and the bottom edge
+// fades so the floor never ends on a hard line.
+.hero-spider {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
+
+  &__canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+
+    &--ready {
+      opacity: 1;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  // The unpinned stage has no height of its own, so the spider's still gets
+  // one.
+  .hero-spider {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    height: 70vh;
+
+    &__canvas {
+      transition: none;
+    }
+  }
+}

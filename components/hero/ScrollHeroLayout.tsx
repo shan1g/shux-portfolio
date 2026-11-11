@@ -1,63 +1,117 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useRef } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { Observer } from "gsap/Observer";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import {
-  HeroGlassFractal,
-  type HeroGlassRenderer,
-  type TriangleLedMode,
-} from "./HeroGlassFractal";
+import { HeroSegmentType } from "./HeroSegmentType";
+import { ChameleonWalker, type ChameleonWalkerRenderer } from "./ChameleonWalker";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { onIntroComplete } from "@/lib/intro/introEvents";
-import { subscribeAudioEnergy } from "@/lib/audio/audioEnergyBus";
-import {
-  HERO_SHAPE_ORB,
-  parseShapeSequence,
-  zoneProgressToSegment,
-  type HeroShapeState,
-} from "@/lib/hero/vgpuGlass/heroGlassScroll";
-import { pageProgressToLedMode } from "@/lib/hero/vgpuGlass/ledBackdrop/heroLedScroll";
 
 gsap.registerPlugin(ScrollTrigger, Observer);
 
-// Shape beats across the hero scroll, like the vgpu example's Fractal / Orb
-// switch.
-const HERO_SHAPES = "orb fractal";
+// The walker's build blocks the main thread for a few seconds, so it starts
+// only once the lettering's warm-up flicker (under a second) has played out:
+// this long after the intro lifts.
+const WALKER_MOUNT_DELAY_MS = 1500;
+// Once built, the walker waits this long, then walks in from the nearer edge
+// of the screen.
+const WALKER_ENTER_DELAY_MS = 700;
+// Where along its track it walks to at the top of the page: the middle,
+// which on a wide screen is the gap between the two words.
+const WALKER_START = 0.5;
+// One crossing of the screen per this many viewport heights of scroll: it
+// walks to one end, turns, and walks back, for as long as the page goes on.
+const CROSSING_VH = 1.6;
+// The walker is a full chameleon build, so it waits for idle time after the
+// first paint, but no longer than this.
+const WALKER_IDLE_TIMEOUT_MS = 2500;
 
-// A zone takes over when its top edge crosses this line of the viewport.
-const ZONE_LINE = "55%";
+// 0 → 1 → 0 → 1 … as u climbs: the walker's place along the screen.
+function pingPong(u: number): number {
+  const m = Math.max(0, u) % 2;
+  return m <= 1 ? m : 2 - m;
+}
 
 export function ScrollHeroLayout({ children }: { children: React.ReactNode }) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const stickyRef = useRef<HTMLDivElement>(null);
-  const backdropRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
   const cueRef = useRef<HTMLDivElement>(null);
-  const glassFractalRef = useRef<HTMLDivElement>(null);
-  const rendererRef = useRef<HeroGlassRenderer | null>(null);
-  // The endpoint and LED mode scroll currently asks for. The renderer loads
-  // asynchronously, so it adopts these on ready instead of waiting for the
-  // next scroll event. Without this, a mid-page reload shows the wrong shape.
-  const desiredShapeRef = useRef<HeroShapeState>(HERO_SHAPE_ORB);
-  const desiredLedRef = useRef<TriangleLedMode>(pageProgressToLedMode(0));
+  const walkerRef = useRef<ChameleonWalkerRenderer | null>(null);
+  // Where scroll currently wants the walker. It loads in its own chunk and
+  // compiles asynchronously, so it adopts this on ready instead of waiting
+  // for the next scroll event. Without this, a mid-page reload walks it to
+  // the wrong place.
+  const desiredPositionRef = useRef(WALKER_START);
+  const [walkerMounted, setWalkerMounted] = useState(false);
+  const [readyWalker, setReadyWalker] =
+    useState<ChameleonWalkerRenderer | null>(null);
   const reducedMotion = useReducedMotion();
 
-  const handleRendererReady = useCallback((renderer: HeroGlassRenderer) => {
-    renderer.setSphereMixDirect(desiredShapeRef.current);
-    renderer.setLedModeDirect(desiredLedRef.current);
+  const handleWalkerReady = useCallback((renderer: ChameleonWalkerRenderer) => {
+    renderer.setPosition(desiredPositionRef.current, true);
+    setReadyWalker(renderer);
   }, []);
+
+  // Build the walker after the opening, in idle time, so its geometry does
+  // not freeze the preloader or the name's warm-up flicker.
+  useEffect(() => {
+    if (reducedMotion || walkerMounted) return;
+
+    let delay = 0;
+    let idle = 0;
+    const mount = () => setWalkerMounted(true);
+    const off = onIntroComplete(() => {
+      delay = window.setTimeout(() => {
+        if (typeof window.requestIdleCallback === "function") {
+          idle = window.requestIdleCallback(mount, {
+            timeout: WALKER_IDLE_TIMEOUT_MS,
+          });
+        } else {
+          mount();
+        }
+      }, WALKER_MOUNT_DELAY_MS);
+    });
+    return () => {
+      off();
+      window.clearTimeout(delay);
+      if (idle) window.cancelIdleCallback(idle);
+    };
+  }, [reducedMotion, walkerMounted]);
+
+  // Once the intro has lifted and the walker has been built and compiled (it
+  // is only built after the opening), it walks in from the nearer edge of
+  // the screen.
+  useEffect(() => {
+    if (!readyWalker) return;
+
+    let timer = 0;
+    const offIntro = onIntroComplete(() => {
+      timer = window.setTimeout(
+        () => readyWalker.enter(),
+        WALKER_ENTER_DELAY_MS,
+      );
+    });
+    return () => {
+      offIntro();
+      window.clearTimeout(timer);
+    };
+  }, [readyWalker]);
 
   useEffect(() => {
     const track = trackRef.current;
-    if (reducedMotion || !track) return;
-
     const glow = glowRef.current;
-    const glassFractal = glassFractalRef.current;
+    if (reducedMotion || !track || !glow) return;
 
     const ctx = gsap.context(() => {
-      const tl = gsap.timeline({
+      // Subtle handoff into Work: the glow drifts up, widens and fades out
+      // as the section arrives.
+      gsap.to(glow, {
+        opacity: 0,
+        scale: 1.3,
+        y: "-10vh",
+        ease: "power1.in",
         scrollTrigger: {
           trigger: track,
           start: "top top",
@@ -66,25 +120,40 @@ export function ScrollHeroLayout({ children }: { children: React.ReactNode }) {
           invalidateOnRefresh: true,
         },
       });
-
-      // Subtle handoff into About: the glow drifts up, widens and fades out
-      // as the section arrives.
-      if (glow) {
-        tl.to(
-          glow,
-          { opacity: 0, scale: 1.3, y: "-10vh", ease: "power1.in", duration: 1 },
-          0,
-        );
-      }
-
-      if (glassFractal) {
-        // The morph keeps switching past the hero pin, so the object has to
-        // stay legible after the hero fade rather than dropping to 0.35.
-        tl.to(glassFractal, { opacity: 0.55, ease: "none", duration: 1 }, 0);
-      }
     }, track);
 
     return () => ctx.revert();
+  }, [reducedMotion]);
+
+  // The walker paces back and forth along the bottom of the screen with
+  // scroll: down the page it keeps crossing and turning, and scrolling up
+  // walks it back the way it came. It eases toward its target itself, so no
+  // scrub here.
+  useEffect(() => {
+    // Reduced motion never mounts the walker.
+    if (reducedMotion) return;
+
+    const apply = (scroll: number, immediate: boolean) => {
+      const position = pingPong(
+        WALKER_START + scroll / (window.innerHeight * CROSSING_VH),
+      );
+      desiredPositionRef.current = position;
+      // Snap on refreshes: a resize or the intro's ScrollTrigger.refresh()
+      // should not read as a walk.
+      walkerRef.current?.setPosition(position, immediate);
+    };
+
+    const trigger = ScrollTrigger.create({
+      start: 0,
+      end: "max",
+      invalidateOnRefresh: true,
+      onUpdate: (self) => apply(self.scroll(), false),
+      onRefresh: (self) => apply(self.scroll(), true),
+    });
+
+    apply(trigger.scroll(), true);
+
+    return () => trigger.kill();
   }, [reducedMotion]);
 
   useEffect(() => {
@@ -109,105 +178,15 @@ export function ScrollHeroLayout({ children }: { children: React.ReactNode }) {
     return () => observer.kill();
   }, [reducedMotion]);
 
-  // Scroll is the switch. Each `[data-glass-shape]` zone (the hero, then
-  // every section) selects an endpoint, and the renderer eases between them
-  // with the example's fixed-duration easeOutQuart morph.
-  useEffect(() => {
-    if (reducedMotion) return;
-
-    const applyShape = (state: HeroShapeState, immediate: boolean) => {
-      desiredShapeRef.current = state;
-      const renderer = rendererRef.current;
-      if (!renderer) return;
-      // Snap on first application and on refreshes: a resize or the intro's
-      // ScrollTrigger.refresh() should not read as a shape change.
-      if (immediate) renderer.setSphereMixDirect(state);
-      else renderer.setSphereMixTarget(state);
-    };
-
-    const zones = gsap.utils
-      .toArray<HTMLElement>("[data-glass-shape]")
-      .map((element) => {
-        const sequence = parseShapeSequence(element.dataset.glassShape);
-        let segment = -1;
-
-        const update = (self: ScrollTrigger, immediate: boolean) => {
-          if (!self.isActive) return;
-          segment = zoneProgressToSegment(
-            self.progress,
-            sequence.length,
-            immediate ? -1 : segment,
-          );
-          applyShape(sequence[segment] ?? HERO_SHAPE_ORB, immediate);
-        };
-
-        const trigger = ScrollTrigger.create({
-          trigger: element,
-          start: `top ${ZONE_LINE}`,
-          end: `bottom ${ZONE_LINE}`,
-          invalidateOnRefresh: true,
-          onToggle: (self) => update(self, false),
-          onUpdate: (self) => update(self, false),
-          onRefresh: (self) => update(self, true),
-        });
-
-        return { trigger, update };
-      });
-
-    zones.forEach(({ trigger, update }) => update(trigger, true));
-
-    const applyLed = (progress: number) => {
-      const mode = pageProgressToLedMode(progress);
-      desiredLedRef.current = mode;
-      rendererRef.current?.setLedModeDirect(mode);
-    };
-
-    const ledTrigger = ScrollTrigger.create({
-      trigger: document.documentElement,
-      start: "top top",
-      end: "bottom bottom",
-      invalidateOnRefresh: true,
-      onUpdate: (self) => applyLed(self.progress),
-      onRefresh: (self) => applyLed(self.progress),
-    });
-
-    applyLed(ledTrigger.progress);
-
-    return () => {
-      zones.forEach(({ trigger }) => trigger.kill());
-      ledTrigger.kill();
-    };
-  }, [reducedMotion]);
-
   useEffect(() => onIntroComplete(() => ScrollTrigger.refresh()), []);
-
-  useEffect(() => {
-    if (reducedMotion) return;
-
-    return subscribeAudioEnergy((energy) => {
-      rendererRef.current?.setAudioEnergyDirect(energy);
-    });
-  }, [reducedMotion]);
 
   return (
     <Fragment>
-      <div ref={backdropRef} className="hero-glass-backdrop" aria-hidden="true">
-        <HeroGlassFractal
-          meshRef={glassFractalRef}
-          stickyRef={backdropRef}
-          rendererRef={rendererRef}
-          onReady={handleRendererReady}
-        />
-      </div>
-
-      <div ref={trackRef} className="scroll-hero" data-glass-shape={HERO_SHAPES}>
-        <div ref={stickyRef} className="scroll-hero__sticky">
+      <div ref={trackRef} className="scroll-hero">
+        <div className="scroll-hero__sticky">
           <div className="scroll-hero__stage">
-            <div
-              ref={glowRef}
-              className="hero-glow"
-              aria-hidden="true"
-            />
+            <div ref={glowRef} className="hero-glow" aria-hidden="true" />
+            <HeroSegmentType trackRef={trackRef} />
             <h1 className="hero-title">SHUX — Shan Gray, front-end engineer</h1>
           </div>
 
@@ -223,6 +202,10 @@ export function ScrollHeroLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       <div className="page-content">{children}</div>
+
+      {!reducedMotion && walkerMounted ? (
+        <ChameleonWalker rendererRef={walkerRef} onReady={handleWalkerReady} />
+      ) : null}
     </Fragment>
   );
 }

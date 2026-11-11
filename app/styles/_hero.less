@@ -12,56 +12,7 @@
   border: 0;
 }
 
-// The WebGPU layer is page-wide and sits between the ambient gradient and the
-// page content, so it reads behind every section instead of ending with the
-// hero pin.
-.hero-glass-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
-
-.hero-glass-fractal {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.7;
-  mask-image: radial-gradient(
-    ellipse 80% 70% at center,
-    #000 20%,
-    transparent 75%
-  );
-
-  &__canvas {
-    display: block;
-    width: 100%;
-    height: 100%;
-    background: transparent;
-    opacity: 0;
-    transform: rotate(180deg);
-    transition: opacity 0.5s ease;
-
-    &--ready {
-      opacity: 1;
-    }
-  }
-}
-
-// Applied twice: once as the `prefers-color-scheme` default (guarded so an
-// explicit dark choice still wins) and once for an explicit light choice. See
-// `_theme.less` for why the theme resolves in CSS rather than from a script.
-@media (prefers-color-scheme: light) {
-  html:not([data-theme="dark"]) .hero-glass-fractal {
-    opacity: 0.5;
-  }
-}
-
-[data-theme="light"] .hero-glass-fractal {
-  opacity: 0.5;
-}
-
+// The soft glow centred in the hero stage; it fades out as Work arrives.
 .hero-glow {
   position: absolute;
   width: min(60vw, 28rem);
@@ -78,8 +29,108 @@
   will-change: opacity;
 }
 
-// With no content in the hero, a short pin is enough for the glass to settle
-// and the glow to fade before About arrives.
+// "SHAN GRAY" in seven-segment lettering after the Mux typeface: two SVG
+// words that share a line on wide screens and stack on narrow ones, seen
+// through glass panes (see HeroSegmentType). Scroll thickens the segments a
+// little, inward, so each letter keeps its size, and slides the panes.
+.hero-type {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0 clamp(0.5rem, 3vw, 2.5rem);
+  padding-inline: @space-6;
+  pointer-events: none;
+
+  &__word {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: clamp(5rem, 14vw, 12rem);
+    overflow: visible;
+  }
+
+  &__stop-a {
+    stop-color: var(--accent);
+  }
+
+  &__stop-b {
+    stop-color: var(--accent-warm);
+  }
+
+  // The unlit segments of a real display, faint behind the lit ones.
+  &__ghosts {
+    stroke: var(--foreground-10);
+    stroke-linecap: round;
+  }
+
+  &__lit {
+    stroke-linecap: round;
+  }
+}
+
+// The glass panes in front of the lettering (geometry in
+// lib/hero/segmentType/glass.ts). The SVG draws the refracted letters inside
+// each pane; these style the slab: a faint tint, a sheen, a 1px rim with red
+// and blue fringes either side, and a fainter inner edge for the thickness.
+.hero-glass {
+  &__tint {
+    fill: var(--foreground);
+    fill-opacity: 0.035;
+  }
+
+  &__sheen-hi {
+    stop-color: #fff;
+    stop-opacity: 0.14;
+  }
+
+  &__sheen-lo {
+    stop-color: #fff;
+    stop-opacity: 0;
+  }
+
+  &__sheen-mid {
+    stop-color: #fff;
+    stop-opacity: 0.05;
+  }
+
+  &__rim,
+  &__inner,
+  &__fringe-r,
+  &__fringe-b {
+    fill: none;
+    stroke-width: 1;
+  }
+
+  &__rim {
+    stroke: var(--foreground);
+    stroke-opacity: 0.34;
+  }
+
+  &__inner {
+    stroke: var(--foreground);
+    stroke-opacity: 0.1;
+  }
+
+  &__fringe-r {
+    stroke: #ff3b4e;
+    stroke-opacity: 0.45;
+  }
+
+  &__fringe-b {
+    stroke: #3d8bff;
+    stroke-opacity: 0.45;
+  }
+
+  // The frosted end panes read a touch milkier.
+  &--smear &__tint {
+    fill-opacity: 0.06;
+  }
+}
+
+// The pin's length is the lettering's weight change: scrolling through it
+// swells the segments into blobs and fades the glow before Work arrives.
 .scroll-hero {
   position: relative;
   min-height: 170vh;
@@ -190,5 +241,33 @@
 @media (prefers-reduced-motion: reduce) {
   .hero-scroll-cue__dot {
     animation: none;
+  }
+}
+
+// The small robotic chameleon pacing back and forth along the bottom of the
+// screen. It sits over the content but under the nav, and never takes
+// clicks. After load it walks in from the nearer edge of the screen; the
+// renderer shows the canvas as it starts.
+.chameleon-walker {
+  position: fixed;
+  right: 0;
+  bottom: var(--safe-bottom);
+  left: 0;
+  z-index: @z-walker;
+  height: clamp(5.5rem, 10vw, 9rem);
+  pointer-events: none;
+
+  &__canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chameleon-walker {
+    display: none;
   }
 }

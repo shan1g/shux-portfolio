@@ -1,8 +1,6 @@
-import { AudioPlayer } from "@/components/audio/AudioPlayer";
 import { Preloader } from "@/components/intro/Preloader";
 import { AmbientBackground } from "@/components/ui/AmbientBackground";
 import { ScrollHeroLayout } from "@/components/hero/ScrollHeroLayout";
-import { NavTabs } from "@/components/nav/NavTabs";
 import { SiteNav } from "@/components/nav/SiteNav";
 import { AboutSection } from "@/components/sections/AboutSection";
 import { CapabilitiesSection } from "@/components/sections/CapabilitiesSection";
@@ -12,6 +10,8 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SmoothScroll } from "@/components/scroll/SmoothScroll";
 import { Cursor } from "@/components/ui/Cursor";
 
+// Work comes straight after the hero: visitors look for proof first, then
+// the skills behind it, then the person.
 export default function Home() {
   return (
     <>
@@ -20,15 +20,13 @@ export default function Home() {
       <AmbientBackground />
       <ScrollHeroLayout>
         <main className="page-main">
-          <AboutSection />
-          <CapabilitiesSection />
           <ProjectsSection />
+          <CapabilitiesSection />
+          <AboutSection />
           <ContactSection />
         </main>
         <SiteFooter />
       </ScrollHeroLayout>
-      <AudioPlayer />
-      <NavTabs />
       <SiteNav />
       <Cursor />
     </>

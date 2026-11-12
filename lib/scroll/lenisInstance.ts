@@ -31,6 +31,24 @@ export function scrollToTarget(
   });
 }
 
+/**
+ * Scroll to an in-page section and move keyboard focus to it, so the next Tab
+ * continues from the section rather than from the link that was used.
+ * Returns false when the section does not exist.
+ */
+export function scrollToSection(
+  id: string,
+  options: { immediate?: boolean } = {},
+): boolean {
+  const element = document.getElementById(id);
+  if (!element) return false;
+
+  scrollToTarget(element, options);
+  if (!element.hasAttribute("tabindex")) element.setAttribute("tabindex", "-1");
+  element.focus({ preventScroll: true });
+  return true;
+}
+
 /** Scroll the page to an absolute Y position through the active scroll authority. */
 export function scrollToY(y: number, options: { immediate?: boolean } = {}): void {
   const lenis = instance;

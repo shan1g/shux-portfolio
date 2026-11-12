@@ -9,8 +9,6 @@ type SectionProps = {
   children: ReactNode;
   className?: string;
   eyebrow?: string;
-  /** Hero glass endpoint(s) shown while this section is in view, e.g. "orb". */
-  glassShape?: string;
 };
 
 export function Section({
@@ -19,7 +17,6 @@ export function Section({
   children,
   className = "",
   eyebrow,
-  glassShape,
 }: SectionProps) {
   const sectionRef = useRef<HTMLElement>(null);
 
@@ -29,7 +26,6 @@ export function Section({
       id={id}
       aria-labelledby={`${id}-heading`}
       className={`section ${className}`.trim()}
-      data-glass-shape={glassShape}
     >
       <div className="container">
         {eyebrow ? (

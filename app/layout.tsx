@@ -53,7 +53,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           `prefers-color-scheme` instead (see app/styles/_theme.less), and
           ThemeProvider writes `data-theme` only as an explicit override.
         */}
-        <a href="#about" className="skip-link">
+        <a href="#work" className="skip-link">
           Skip to content
         </a>
         <ThemeProvider>{children}</ThemeProvider>

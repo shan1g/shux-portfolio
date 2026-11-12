@@ -1,4 +1,4 @@
-import type { Bundle, Frame, FramePass, Gpu, Target } from 'vgpu';
+import type { Frame, FramePass, Gpu, Target } from 'vgpu';
 
 import ledEmittersWgsl from './shaders/led-emitters.wgsl';
 import {

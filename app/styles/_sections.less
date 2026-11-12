@@ -19,11 +19,17 @@
   @media (min-width: @bp-md) {
     padding-block: @space-32;
   }
+
+  // Sections only take focus from in-page navigation (scrollToSection), so a
+  // whole-section outline would add noise without helping orientation.
+  &:focus {
+    outline: none;
+  }
 }
 
-// About follows the hero directly. Its surface fades in from the top so the
+// Work follows the hero directly. Its surface fades in from the top so the
 // glass backdrop dissolves into the section instead of meeting a hard edge.
-#about::before {
+#work::before {
   mask-image: linear-gradient(to bottom, transparent, #000 40vh);
 }
 

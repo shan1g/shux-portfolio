@@ -1,31 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { isWebGPUSupported } from "@/lib/hero/vgpuGlass/isWebGPUSupported";
-
-const HERO_ASSET_URLS = [
-  "/hero/glass-fractal/rounded-tetrahedron.mesh",
-  "/hero/glass-fractal/fractal-tetrahedron-l7.mesh",
-  "/hero/glass-fractal/studio-cubemap-prefiltered.png",
-];
 
 export const READINESS_TIMEOUT_MS = 3500;
 
+// The hero has no heavy assets left to fetch, so the intro only waits for the
+// fonts.
 export function useAssetReadiness() {
   const [progress, setProgress] = useState(0);
   const [settled, setSettled] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    const controller = new AbortController();
 
-    const tasks: Promise<unknown>[] = [
-      document.fonts.ready,
-      isWebGPUSupported(),
-      ...HERO_ASSET_URLS.map((url) =>
-        fetch(url, { signal: controller.signal, cache: "force-cache" }),
-      ),
-    ];
+    const tasks: Promise<unknown>[] = [document.fonts.ready];
 
     const total = tasks.length;
     let done = 0;
@@ -54,7 +42,6 @@ export function useAssetReadiness() {
 
     return () => {
       cancelled = true;
-      controller.abort();
       window.clearTimeout(timer);
     };
   }, []);

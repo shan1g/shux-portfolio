@@ -90,7 +90,9 @@
   position: relative;
   z-index: @z-content;
   border-top: 1px solid var(--foreground-10);
-  padding-block: @space-12 calc(@space-10 + var(--safe-bottom));
+  // The bottom padding clears the fixed bottom nav, so the copyright line
+  // is never hidden behind it at the end of the page.
+  padding-block: @space-12 calc(6.5rem + var(--safe-bottom));
   background: color-mix(in srgb, var(--background) 70%, transparent);
   backdrop-filter: blur(6px);
 

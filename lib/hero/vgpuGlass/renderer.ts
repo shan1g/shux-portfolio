@@ -41,7 +41,6 @@ export interface HeroGlassRenderer {
   setSphereMixDirect(value: number): void;
   setSphereMixTarget(value: number): void;
   setLedModeDirect(mode: TriangleLedMode): void;
-  setAudioEnergyDirect(value: number): void;
   applyTheme(theme: Theme): void;
   dispose(): void;
 }
@@ -260,12 +259,6 @@ export function createRenderer(options: RendererOptions): HeroGlassRenderer {
     requestRender();
   };
 
-  const setAudioEnergyDirect = (value: number) => {
-    if (!ledBackdrop) return;
-    ledBackdrop.setAudioEnergy(value);
-    requestRender();
-  };
-
   const applyTheme = (theme: Theme) => {
     applyThemeToHeroGlass(theme, fractalMaterial, orbMaterial, glass);
     ledBackdrop?.applyTheme(theme);
@@ -425,7 +418,6 @@ export function createRenderer(options: RendererOptions): HeroGlassRenderer {
     setSphereMixDirect,
     setSphereMixTarget,
     setLedModeDirect,
-    setAudioEnergyDirect,
     applyTheme,
     dispose,
   };

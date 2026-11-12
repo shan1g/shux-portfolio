@@ -23,7 +23,6 @@ export function AboutSection() {
       id="about"
       aria-labelledby="about-heading"
       className="section"
-      data-glass-shape="orb"
     >
       <div className="container">
         <SectionEyebrow targetRef={sectionRef}>Who</SectionEyebrow>

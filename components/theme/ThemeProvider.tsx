@@ -19,7 +19,7 @@ const THEME_CHANGE_EVENT = "shux:theme-change";
 // know the theme while rendering. The theme is therefore treated as external
 // state and read through useSyncExternalStore: the hydrating render uses the
 // server snapshot below, and React swaps in the real client snapshot once
-// hydration finishes. That avoids both the ThemeToggleOrb hydration mismatch
+// hydration finishes. That avoids both a theme toggle hydration mismatch
 // and the cascading render a setState-in-effect would cause.
 const SERVER_THEME: Theme = "dark";
 

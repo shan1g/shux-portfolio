@@ -3,7 +3,6 @@ import type { Frame, Gpu, Target } from "vgpu";
 import { target } from "vgpu";
 import {
   createHeroRenderer,
-  type HeroRenderer,
   type HeroRendererCss,
 } from "./scene-renderer";
 import { heroStateForActiveClick } from "./sim-sizing";
@@ -18,7 +17,6 @@ export interface LedBackdrop {
   rebuild(css: HeroRendererCss): void;
   resize(size: readonly [number, number]): void;
   setLedMode(mode: TriangleLedMode): void;
-  setAudioEnergy(value: number): void;
   setBrush(partial: Partial<BrushState>): void;
   applyTheme(theme: Theme): void;
   prewarm(): Promise<void>;
@@ -50,30 +48,12 @@ export function createLedBackdrop(
     heroRenderer.setHero(heroStateForActiveClick(mode));
   };
 
-  let currentTheme: Theme = "dark";
-  let audioEnergy = 0;
-
-  const AUDIO_INTENSITY_GAIN = 0.85;
-
-  const pushTunables = () => {
-    const baseIntensity = currentTheme === "light" ? 1.3 : 1;
-    heroRenderer.setTunables({
-      ledIntensity: baseIntensity * (1 + audioEnergy * AUDIO_INTENSITY_GAIN),
-      brightnessMin: currentTheme === "light" ? 0.11 : 0.09,
-    });
-  };
-
   const applyTheme = (theme: Theme) => {
     setHeroLedTheme(theme);
-    currentTheme = theme;
-    pushTunables();
-  };
-
-  const setAudioEnergy = (value: number) => {
-    const next = Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0;
-    if (Math.abs(next - audioEnergy) < 0.005) return;
-    audioEnergy = next;
-    pushTunables();
+    heroRenderer.setTunables({
+      ledIntensity: theme === "light" ? 1.3 : 1,
+      brightnessMin: theme === "light" ? 0.11 : 0.09,
+    });
   };
 
   return {
@@ -93,7 +73,6 @@ export function createLedBackdrop(
       heroRenderer.setOutputTarget(floorTarget);
     },
     setLedMode,
-    setAudioEnergy,
     setBrush(partial) {
       heroRenderer.setBrush(partial);
     },

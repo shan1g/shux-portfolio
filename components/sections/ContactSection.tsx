@@ -31,7 +31,6 @@ export function ContactSection() {
       id="contact"
       aria-labelledby="contact-heading"
       className="section"
-      data-glass-shape="fractal"
     >
       <div className="container">
         <SectionEyebrow targetRef={sectionRef}>Connect</SectionEyebrow>

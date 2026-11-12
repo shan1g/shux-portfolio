@@ -4,17 +4,18 @@ import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { Observer } from "gsap/Observer";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { HeroSegmentType } from "./HeroSegmentType";
+import { HeroShanScene } from "./HeroShanScene";
 import { ChameleonWalker, type ChameleonWalkerRenderer } from "./ChameleonWalker";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { onIntroComplete } from "@/lib/intro/introEvents";
 
 gsap.registerPlugin(ScrollTrigger, Observer);
 
 // The walker's build blocks the main thread for a few seconds, so it starts
-// only once the lettering's warm-up flicker (under a second) has played out:
-// this long after the intro lifts.
-const WALKER_MOUNT_DELAY_MS = 1500;
+// only once the letters' entrance (about two seconds) has played out: this
+// long after the intro lifts.
+const WALKER_MOUNT_DELAY_MS = 2000;
 // Once built, the walker waits this long, then walks in from the nearer edge
 // of the screen.
 const WALKER_ENTER_DELAY_MS = 700;
@@ -31,6 +32,49 @@ const WALKER_IDLE_TIMEOUT_MS = 2500;
 // What the walker should not come to rest behind: the nav pill (SiteNav) and
 // the scroll cue.
 const WALKER_AVOID = ".site-nav__bar, .hero-scroll-cue";
+// The walker only runs from md (@bp-md) up; phones never build it, so their
+// GPU and CPU go to the hero.
+const WALKER_MEDIA = "(min-width: 768px)";
+// Once the end of Work has scrolled up past the middle of the screen, the
+// walker walks off the nearer edge and is unmounted, freeing its render loop
+// and geometry.
+const WALKER_LEAVE_AFTER = "#work";
+// The walker is for first visits. A first visit marks it "pending", and it is
+// marked "left" only once it has walked in and off again, so a visitor who
+// scrolled past Work before it appeared still gets it next time.
+const WALKER_KEY = "shux:chameleon";
+// Set by the Preloader once the intro has played: a returning visitor.
+const INTRO_SEEN_KEY = "shux:intro-seen";
+
+// Whether this visit gets the walker. Read on mount, before the Preloader
+// marks the intro seen.
+function walkerDue(): boolean {
+  try {
+    const store = window.localStorage;
+    const state = store.getItem(WALKER_KEY);
+    if (store.getItem(INTRO_SEEN_KEY) === "1") return state === "pending";
+    if (state === "left") return false;
+    if (state === null) store.setItem(WALKER_KEY, "pending");
+    return true;
+  } catch {
+    // Without storage every visit is a first visit, as for the intro.
+    return true;
+  }
+}
+
+function rememberWalkerLeft(): void {
+  try {
+    window.localStorage.setItem(WALKER_KEY, "left");
+  } catch {
+    // Storage can be unavailable (private mode); it just walks again next visit.
+  }
+}
+
+// Whether the end of Work has scrolled up past the middle of the screen.
+function pastWork(): boolean {
+  const work = document.querySelector(WALKER_LEAVE_AFTER);
+  return !!work && work.getBoundingClientRect().bottom <= window.innerHeight / 2;
+}
 
 // Where the walker stands at the top of the page: WALKER_START, or the
 // nearest spot clear of WALKER_AVOID.
@@ -54,8 +98,6 @@ function pingPong(u: number): number {
 }
 
 export function ScrollHeroLayout({ children }: { children: React.ReactNode }) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const glowRef = useRef<HTMLDivElement>(null);
   const cueRef = useRef<HTMLDivElement>(null);
   const walkerRef = useRef<ChameleonWalkerRenderer | null>(null);
   // Where scroll currently wants the walker. It loads in its own chunk and
@@ -65,10 +107,18 @@ export function ScrollHeroLayout({ children }: { children: React.ReactNode }) {
   const desiredPositionRef = useRef(WALKER_START);
   // Where it stands at the top of the page, clear of the nav (restSpot).
   const startRef = useRef(WALKER_START);
+  // Whether this visit gets the walker (walkerDue), read once on mount.
+  const walkerDueRef = useRef(false);
+  // Whether it has been told to walk in: only then does walking off count.
+  const walkerEnteredRef = useRef(false);
   const [walkerMounted, setWalkerMounted] = useState(false);
   const [readyWalker, setReadyWalker] =
     useState<ChameleonWalkerRenderer | null>(null);
   const reducedMotion = useReducedMotion();
+  const isDesktop = useMediaQuery(WALKER_MEDIA);
+  // It has walked off past Work (or Work was already behind the reader): it
+  // stays unmounted from then on.
+  const [walkerGone, setWalkerGone] = useState(false);
 
   const handleWalkerReady = useCallback((renderer: ChameleonWalkerRenderer) => {
     startRef.current = restSpot(renderer);
@@ -77,10 +127,17 @@ export function ScrollHeroLayout({ children }: { children: React.ReactNode }) {
     setReadyWalker(renderer);
   }, []);
 
-  // Build the walker after the opening, in idle time, so its geometry does
-  // not freeze the preloader or the name's warm-up flicker.
+  // Read on mount, before the Preloader marks the intro seen, and before the
+  // effects below that use it.
   useEffect(() => {
-    if (reducedMotion || walkerMounted) return;
+    walkerDueRef.current = walkerDue();
+  }, []);
+
+  // Build the walker after the opening, in idle time, so its geometry does
+  // not freeze the preloader or the letters' entrance. Desktop only, and only
+  // for a visit that is due it.
+  useEffect(() => {
+    if (reducedMotion || !isDesktop || walkerMounted || walkerGone || !walkerDueRef.current) return;
 
     let delay = 0;
     let idle = 0;
@@ -101,7 +158,7 @@ export function ScrollHeroLayout({ children }: { children: React.ReactNode }) {
       window.clearTimeout(delay);
       if (idle) window.cancelIdleCallback(idle);
     };
-  }, [reducedMotion, walkerMounted]);
+  }, [reducedMotion, isDesktop, walkerMounted, walkerGone]);
 
   // Once the intro has lifted and the walker has been built and compiled (it
   // is only built after the opening), it walks in from the nearer edge of
@@ -111,42 +168,16 @@ export function ScrollHeroLayout({ children }: { children: React.ReactNode }) {
 
     let timer = 0;
     const offIntro = onIntroComplete(() => {
-      timer = window.setTimeout(
-        () => readyWalker.enter(),
-        WALKER_ENTER_DELAY_MS,
-      );
+      timer = window.setTimeout(() => {
+        walkerEnteredRef.current = true;
+        readyWalker.enter();
+      }, WALKER_ENTER_DELAY_MS);
     });
     return () => {
       offIntro();
       window.clearTimeout(timer);
     };
   }, [readyWalker]);
-
-  useEffect(() => {
-    const track = trackRef.current;
-    const glow = glowRef.current;
-    if (reducedMotion || !track || !glow) return;
-
-    const ctx = gsap.context(() => {
-      // Subtle handoff into Work: the glow drifts up, widens and fades out
-      // as the section arrives.
-      gsap.to(glow, {
-        opacity: 0,
-        scale: 1.3,
-        y: "-10vh",
-        ease: "power1.in",
-        scrollTrigger: {
-          trigger: track,
-          start: "top top",
-          end: "bottom bottom",
-          scrub: 0.8,
-          invalidateOnRefresh: true,
-        },
-      });
-    }, track);
-
-    return () => ctx.revert();
-  }, [reducedMotion]);
 
   // The walker paces back and forth along the bottom of the screen with
   // scroll: down the page it keeps crossing and turning, and scrolling up
@@ -182,6 +213,30 @@ export function ScrollHeroLayout({ children }: { children: React.ReactNode }) {
     return () => trigger.kill();
   }, [reducedMotion]);
 
+  // Past Work the walker walks off the nearer edge, then is unmounted so its
+  // render loop and geometry are freed. If it never walked in, it is
+  // unmounted without counting as seen, so the next visit still gets it.
+  useEffect(() => {
+    if (reducedMotion || !isDesktop || walkerGone || !walkerDueRef.current) return;
+
+    let leaving = false;
+    const check = () => {
+      if (leaving || !pastWork()) return;
+      leaving = true;
+      window.removeEventListener("scroll", check);
+      const walker = walkerRef.current;
+      const walkedIn = walkerEnteredRef.current;
+      void (walker ? walker.leave() : Promise.resolve()).then(() => {
+        if (walkedIn) rememberWalkerLeft();
+        setWalkerGone(true);
+      });
+    };
+
+    window.addEventListener("scroll", check, { passive: true });
+    check();
+    return () => window.removeEventListener("scroll", check);
+  }, [reducedMotion, isDesktop, walkerGone]);
+
   useEffect(() => {
     const cue = cueRef.current;
     if (reducedMotion || !cue) return;
@@ -208,11 +263,10 @@ export function ScrollHeroLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <Fragment>
-      <div ref={trackRef} className="scroll-hero">
+      <div className="scroll-hero">
         <div className="scroll-hero__sticky">
+          <HeroShanScene />
           <div className="scroll-hero__stage">
-            <div ref={glowRef} className="hero-glow" aria-hidden="true" />
-            <HeroSegmentType trackRef={trackRef} />
             <h1 className="hero-title">SHUX — Shan Gray, front-end engineer</h1>
           </div>
 
@@ -229,7 +283,7 @@ export function ScrollHeroLayout({ children }: { children: React.ReactNode }) {
 
       <div className="page-content">{children}</div>
 
-      {!reducedMotion && walkerMounted ? (
+      {!reducedMotion && isDesktop && walkerMounted && !walkerGone ? (
         <ChameleonWalker rendererRef={walkerRef} onReady={handleWalkerReady} />
       ) : null}
     </Fragment>

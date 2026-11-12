@@ -12,149 +12,110 @@
   border: 0;
 }
 
-// The soft glow centred in the hero stage; it fades out as Work arrives.
-.hero-glow {
+// The hero's backdrop and scroll cue, per theme. Both use the page's own
+// background with a faint warm wash above and a violet one behind the stack,
+// so the hero blends into the sections after it, and the cue in the theme's
+// colours. Set on .scroll-hero, which holds both the scene and the cue, and
+// resolved like _theme.less: the system preference first, then an explicit
+// data-theme choice (more specific, so it always wins).
+.hero-scene-light() {
+  // The violet wash sits behind the stack rather than at the bottom edge, and
+  // the last stretch fades to the page background (the grain with it), so no
+  // seam shows where Work begins.
+  --hero-scene-bg: ~"linear-gradient(180deg, transparent 72%, var(--background) 100%), radial-gradient(120% 80% at 50% 15%, rgb(255 190 85 / 0.14) 0%, transparent 62%), radial-gradient(70% 55% at 50% 60%, rgb(76 60 200 / 0.07) 0%, transparent 72%), var(--background)";
+  --hero-scene-grain: 0.07;
+  --hero-scene-grain-blend: multiply;
+  --hero-scene-grain-mask: ~"linear-gradient(180deg, #000 70%, transparent 100%)";
+  --hero-cue-label: var(--foreground);
+  --hero-cue-rail: var(--foreground-10);
+  --hero-cue-dot: var(--accent);
+}
+
+// The same as light on the dark page background: the washes a little
+// stronger so they read on near-black, and the grain lightening (screen)
+// rather than darkening, which would vanish there.
+.hero-scene-dark() {
+  --hero-scene-bg: ~"linear-gradient(180deg, transparent 72%, var(--background) 100%), radial-gradient(120% 80% at 50% 15%, rgb(255 190 85 / 0.07) 0%, transparent 62%), radial-gradient(70% 55% at 50% 60%, rgb(110 90 255 / 0.12) 0%, transparent 72%), var(--background)";
+  --hero-scene-grain: 0.05;
+  --hero-scene-grain-blend: screen;
+  --hero-scene-grain-mask: ~"linear-gradient(180deg, #000 70%, transparent 100%)";
+  --hero-cue-label: var(--foreground);
+  --hero-cue-rail: var(--foreground-10);
+  --hero-cue-dot: var(--accent);
+}
+
+.scroll-hero {
+  .hero-scene-light();
+}
+
+@media (prefers-color-scheme: dark) {
+  .scroll-hero {
+    .hero-scene-dark();
+  }
+}
+
+[data-theme="light"] .scroll-hero {
+  .hero-scene-light();
+}
+
+[data-theme="dark"] .scroll-hero {
+  .hero-scene-dark();
+}
+
+// The hero's 3D scene (HeroShanScene): "SHAN" in long extruded blocks on an
+// angled base, among frosted glass tubes and rings, drawn on a transparent
+// canvas over the theme's backdrop, with a fine grain over everything like a
+// printed poster.
+.hero-scene {
   position: absolute;
-  width: min(60vw, 28rem);
-  height: min(60vw, 28rem);
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    var(--hero-glow-inner) 0%,
-    var(--hero-glow-outer) 40%,
-    transparent 70%
-  );
-  filter: blur(32px);
-  pointer-events: none;
-  will-change: opacity;
-}
-
-// "SHAN GRAY" in seven-segment lettering after the Mux typeface: two SVG
-// words that share a line on wide screens and stack on narrow ones, seen
-// through glass panes (see HeroSegmentType). Scroll thickens the segments a
-// little, inward, so each letter keeps its size, and slides the panes.
-.hero-type {
-  position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0 clamp(0.5rem, 3vw, 2.5rem);
-  padding-inline: @space-6;
+  inset: 0;
+  overflow: hidden;
+  background: var(--hero-scene-bg);
   pointer-events: none;
 
-  &__word {
+  // The grain: faint fractal noise over the whole scene.
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: var(--hero-scene-grain);
+    mix-blend-mode: var(--hero-scene-grain-blend);
+    -webkit-mask-image: var(--hero-scene-grain-mask);
+    mask-image: var(--hero-scene-grain-mask);
+  }
+
+  // The canvas is fixed to the screen, under .page-content, so as the page
+  // scrolls on the sections rise over the scene and it stays behind them.
+  // The scene sets --hero-scene-away from 0 (the hero filling the screen) to
+  // 1 (scrolled away), and the canvas blurs and dims with it: still there
+  // behind the content, but soft. The backdrop and grain above scroll away
+  // with the hero, leaving the page's ambient background behind the scene.
+  //
+  // On phones the scroll cue sits high, clear of the audio pill, so the
+  // canvas stops above it and the letters centre in the space left. The
+  // letters fit the width there, so this barely changes their size.
+  &__canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
     display: block;
-    width: auto;
-    max-width: 100%;
-    height: clamp(5rem, 14vw, 12rem);
-    overflow: visible;
-  }
+    width: 100%;
+    height: calc(100% - (1.25rem + 3.5rem + @space-4 + 4.5rem + var(--safe-bottom)));
+    filter: blur(calc(var(--hero-scene-away, 0) * 6px));
+    opacity: calc(1 - var(--hero-scene-away, 0) * 0.3);
 
-  &__stop-a {
-    stop-color: var(--accent);
-  }
-
-  &__stop-b {
-    stop-color: var(--accent-warm);
-  }
-
-  // The unlit segments of a real display, faint behind the lit ones.
-  &__ghosts {
-    stroke: var(--foreground-10);
-    stroke-linecap: round;
-  }
-
-  &__lit {
-    stroke-linecap: round;
+    @media (min-width: @bp-md) {
+      height: 100%;
+    }
   }
 }
 
-// The glass panes in front of the lettering (geometry in
-// lib/hero/segmentType/glass.ts). The SVG draws the refracted letters inside
-// each pane; these style the slab: a faint tint, a sheen, a 1px rim with red
-// and blue fringes either side, and a fainter inner edge for the thickness.
-.hero-glass {
-  &__tint {
-    fill: var(--foreground);
-    fill-opacity: 0.035;
-  }
-
-  &__sheen-hi {
-    stop-color: #fff;
-    stop-opacity: 0.14;
-  }
-
-  &__sheen-lo {
-    stop-color: #fff;
-    stop-opacity: 0;
-  }
-
-  &__sheen-mid {
-    stop-color: #fff;
-    stop-opacity: 0.05;
-  }
-
-  &__rim,
-  &__inner,
-  &__fringe-r,
-  &__fringe-b {
-    fill: none;
-    stroke-width: 1;
-  }
-
-  &__rim {
-    stroke: var(--foreground);
-    stroke-opacity: 0.34;
-  }
-
-  &__inner {
-    stroke: var(--foreground);
-    stroke-opacity: 0.1;
-  }
-
-  &__fringe-r {
-    stroke: #ff3b4e;
-    stroke-opacity: 0.45;
-  }
-
-  &__fringe-b {
-    stroke: #3d8bff;
-    stroke-opacity: 0.45;
-  }
-
-  // The frosted end panes read a touch milkier.
-  &--smear &__tint {
-    fill-opacity: 0.06;
-  }
-}
-
-// The pin's length is the lettering's weight change: scrolling through it
-// swells the segments into blobs and fades the glow before Work arrives.
+// One screen: the scene fills it and the page scrolls straight on into Work,
+// with no pinned passes to scroll through. Reduced motion keeps the same
+// full-screen still.
 .scroll-hero {
   position: relative;
-  min-height: 170vh;
-
-  @media (min-width: @bp-md) {
-    min-height: 200vh;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .scroll-hero {
-    min-height: 0;
-  }
-
-  .scroll-hero__sticky {
-    position: relative;
-    height: auto;
-    padding-block: @space-24;
-  }
-
-  .scroll-hero__stage {
-    position: relative;
-    inset: auto;
-  }
 }
 
 .scroll-hero__sticky {
@@ -204,7 +165,7 @@
     font-weight: 500;
     letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: var(--foreground);
+    color: var(--hero-cue-label);
   }
 
   &__rail {
@@ -213,7 +174,7 @@
     width: 1px;
     height: @space-10;
     overflow: hidden;
-    background: var(--foreground-10);
+    background: var(--hero-cue-rail);
   }
 
   &__dot {
@@ -223,7 +184,7 @@
     display: block;
     width: 100%;
     height: 40%;
-    background: var(--accent);
+    background: var(--hero-cue-dot);
     animation: hero-cue-travel 1.8s @ease-out-soft infinite;
   }
 }
@@ -245,56 +206,25 @@
 }
 
 // The small robotic chameleon pacing back and forth along the bottom of the
-// screen. It sits over the content but under the nav, and never takes
-// clicks. After load it walks in from the nearer edge of the screen; the
-// renderer shows the canvas as it starts.
-//
-// On phones the nav pill spans nearly the whole width, so it climbs the left
-// edge of the screen instead: the strip stands up the left side and its
-// canvas is turned a quarter clockwise, so the canvas's bottom edge (the
-// floor) is the screen's left edge and its track runs down the screen. The
-// renderer sizes from the canvas's untransformed layout, so it needs nothing
-// else. From md up it walks along the bottom.
-@walker-climb-w: 4.5rem;
-
+// screen. It is only mounted from md up, on a first visit (ScrollHeroLayout).
+// It sits over the content but under the nav, and never takes clicks. After
+// load it walks in from the nearer edge of the screen; the renderer shows the
+// canvas as it starts.
 .chameleon-walker {
   position: fixed;
-  top: 0;
-  left: var(--safe-left);
+  right: 0;
+  bottom: var(--safe-bottom);
+  left: 0;
   z-index: @z-walker;
-  width: @walker-climb-w;
-  height: 100vh;
-  height: 100dvh;
+  height: clamp(5.5rem, 10vw, 9rem);
   pointer-events: none;
 
   &__canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
     display: block;
-    width: 100vh;
-    width: 100dvh;
-    height: @walker-climb-w;
+    width: 100%;
+    height: 100%;
     opacity: 0;
     visibility: hidden;
-    transform-origin: 0 0;
-    transform: translateX(@walker-climb-w) rotate(90deg);
-  }
-
-  @media (min-width: @bp-md) {
-    top: auto;
-    right: 0;
-    bottom: var(--safe-bottom);
-    left: 0;
-    width: auto;
-    height: clamp(5.5rem, 10vw, 9rem);
-
-    &__canvas {
-      position: static;
-      width: 100%;
-      height: 100%;
-      transform: none;
-    }
   }
 }
 

@@ -16,7 +16,8 @@ type ChameleonWalkerProps = {
 };
 
 // The small chameleon that walks back and forth along the bottom of the screen as you scroll. It is decorative:
-// hidden from assistive tech, it never takes clicks, and it is not mounted with reduced motion.
+// hidden from assistive tech, it never takes clicks, and it is not mounted with reduced motion or on phones. Past
+// Work it walks off screen and is unmounted (ScrollHeroLayout).
 export function ChameleonWalker({ rendererRef, onReady }: ChameleonWalkerProps) {
   const { theme } = useTheme();
 

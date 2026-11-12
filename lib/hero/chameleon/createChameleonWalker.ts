@@ -18,6 +18,11 @@ export interface ChameleonWalkerRenderer {
   /** Walk in from the nearer edge of the screen to where scroll wants it. Only the first call counts. */
   enter(): void;
   /**
+   * Walk off the nearer edge of the screen and stop drawing. Resolves once it is wholly off screen, or at once if it
+   * never walked in. Only the first call counts.
+   */
+  leave(): Promise<void>;
+  /**
    * Where along the screen it should be: 0 the left end of its track, 1 the right end. On phones the strip climbs the
    * left edge of the screen, and 0 is the top, 1 the bottom.
    */
@@ -337,6 +342,18 @@ export function createChameleonWalker({ canvas, theme }: ChameleonWalkerOptions)
   let isReady = false;
   let disposed = false;
   let frame = 0;
+  // Walking off: where it is headed (the nearer edge, wholly off screen), and gone once it is there.
+  let exitX: number | null = null;
+  let gone = false;
+  let leaving: Promise<void> | null = null;
+  let resolveLeave: (() => void) | null = null;
+
+  const finishLeave = () => {
+    gone = true;
+    canvas.style.visibility = "hidden";
+    resolveLeave?.();
+    resolveLeave = null;
+  };
 
   const trackX = () => {
     const half = Math.max(0, viewW / 2 - EDGE);
@@ -384,11 +401,14 @@ export function createChameleonWalker({ canvas, theme }: ChameleonWalkerOptions)
   // Advances one frame. Returns whether anything is still moving.
   const step = (dt: number) => {
     elapsed += dt;
-    const target = trackX();
+    const target = exitX ?? trackX();
     const maxStep = MAX_SPEED * dt;
-    const dx = clamp((target - x) * (1 - Math.exp(-FOLLOW_RATE * dt)), -maxStep, maxStep);
+    // Walking off it keeps its top speed all the way out, rather than easing in to the edge.
+    const pull = exitX === null ? (target - x) * (1 - Math.exp(-FOLLOW_RATE * dt)) : target - x;
+    const dx = clamp(pull, -maxStep, maxStep);
     x += dx;
-    if (!arrived && Math.abs(target - x) < 0.05) arrived = true;
+    if (exitX === null && !arrived && Math.abs(target - x) < 0.05) arrived = true;
+    if (exitX !== null && !gone && Math.abs(exitX - x) < 1e-6) finishLeave();
 
     // The gait runs on the distance walked in the direction it faces, so walking backwards steps backwards.
     const forward = dx * facing;
@@ -416,7 +436,7 @@ export function createChameleonWalker({ canvas, theme }: ChameleonWalkerOptions)
     return busy;
   };
 
-  const shouldRun = () => isReady && !disposed && pageVisible && started;
+  const shouldRun = () => isReady && !disposed && pageVisible && started && !gone;
 
   const loop = (now: number) => {
     frame = 0;
@@ -458,8 +478,8 @@ export function createChameleonWalker({ canvas, theme }: ChameleonWalkerOptions)
     camera.right = viewW / 2;
     camera.updateProjectionMatrix();
     // A resize moves the track's ends; once it has walked in, jump there rather than walk.
-    if (arrived) x = trackX();
-    if (isReady && !disposed && started) draw();
+    if (arrived && exitX === null) x = trackX();
+    if (isReady && !disposed && started && !gone) draw();
   };
   const resizeObserver = new ResizeObserver(resize);
   resizeObserver.observe(canvas);
@@ -475,7 +495,7 @@ export function createChameleonWalker({ canvas, theme }: ChameleonWalkerOptions)
     renderer.toneMappingExposure = EXPOSURE[next];
     shadowStrength = SHADOW_OPACITY[next];
     camo.setTheme(next);
-    if (isReady && !disposed && started) draw();
+    if (isReady && !disposed && started && !gone) draw();
   };
   applyTheme(theme);
 
@@ -511,10 +531,25 @@ export function createChameleonWalker({ canvas, theme }: ChameleonWalkerOptions)
       canvas.style.visibility = "visible";
       wake();
     },
+    leave() {
+      if (!leaving) {
+        leaving = new Promise<void>((resolve) => {
+          resolveLeave = resolve;
+        });
+        if (!started || disposed) {
+          finishLeave();
+        } else {
+          // To the nearer edge, wholly off screen; scroll no longer moves it.
+          exitX = (x >= 0 ? 1 : -1) * (viewW / 2 + OFFSTAGE);
+          wake();
+        }
+      }
+      return leaving;
+    },
     setPosition(value, immediate = false) {
       position = Math.min(1, Math.max(0, value));
-      // A refresh snaps it to its spot, but never cuts its walk in short.
-      if (immediate && (arrived || !started)) x = trackX();
+      // A refresh snaps it to its spot, but never cuts its walk in or its walk off short.
+      if (immediate && exitX === null && (arrived || !started)) x = trackX();
       wake();
     },
     clearPosition(preferred, avoid) {
@@ -557,6 +592,8 @@ export function createChameleonWalker({ canvas, theme }: ChameleonWalkerOptions)
     dispose() {
       disposed = true;
       if (frame) cancelAnimationFrame(frame);
+      resolveLeave?.();
+      resolveLeave = null;
       resizeObserver.disconnect();
       document.removeEventListener("visibilitychange", onVisibility);
       disposeTree(scene);

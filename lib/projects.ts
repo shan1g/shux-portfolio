@@ -18,9 +18,10 @@ export type Project = {
   highlights?: string[];
 };
 
-// Copy below comes from each project's Behance text, retrieved through search
-// excerpts because Behance returns 403 to direct fetches. Projects without
-// retrievable chapter copy list only their lead. Nothing has been invented.
+// Copy below comes from each project's Behance text. Behance returns 403 to
+// direct fetches, so it was retrieved from the profile's RSS feed, Wayback
+// Machine captures and search excerpts. Projects without retrievable chapter
+// copy list only their lead. Nothing has been invented.
 export const projects: Project[] = [
   {
     title: "Cadbury — Hide them with Love Mzansi",
@@ -74,14 +75,22 @@ export const projects: Project[] = [
   {
     title: "Colgate — Beyond the Cookie CRM",
     client: "Colgate",
-    // Behance copy could not be retrieved (403, no search excerpt). This lead
-    // is the original site copy, not Behance copy. Replace it once available.
     description:
-      "Personalised CRM flows that go past one-size-fits-all messaging — tailoring oral-care journeys to real user behaviour and context.",
+      "First-party data (1PD) is becoming a rare commodity as we shift towards a cookieless world.",
     href: "https://www.behance.net/gallery/173870519/Colgate-Beyond-the-cookie-CRM",
     tags: ["CRM", "Personalisation", "Web"],
     source: "behance",
     image: "/work/colgate-crm.png",
+    chapters: [
+      {
+        label: "Challenge",
+        body: "Colgate-Palmolive needed to create a lucrative global mine that would harvest consumer data. It also needed to create long-term engagement through personalised communications. Our task was to build a CRM system that supported multiple nuanced markets, as well as being able to adapt to individuals.",
+      },
+      {
+        label: "Approach",
+        body: "We created a CRM system that can scale into a personalised loyalty program over time. To achieve this, we adopted a phased approach to gain consumer data incrementally. Phase 1 uses a data-driven onboarding experience to collect 1PD. This is the point where Colgate Oral Care and its customers establish a relationship through personalised communications.",
+      },
+    ],
   },
   {
     title: "Anglo American — Mining Indaba Metavention",
@@ -95,29 +104,21 @@ export const projects: Project[] = [
     image: "/work/anglo-indaba.png",
   },
   {
-    title: "Citizens Bank — Living Portrait of NYC",
-    client: "Citizens",
+    title: "Citizens Bank — Living Portrait of NYC Website",
+    client: "Citizens Bank",
     description:
-      "Citizens commissioned a multimedia, multi-sensory exhibition to celebrate the unique elements that make New York, New York.",
-    href: "https://www.behance.net/gallery/164782513/Citizens-The-Living-Portrait-of-NYC",
-    tags: ["Data viz", "Web", "Storytelling"],
+      "Our NY office had created a wonderfully immersive NYC launch experience for Citizens Bank.",
+    href: "https://www.behance.net/gallery/188012917/Citizens-Bank-The-Living-Portrait-of-NYC-Website",
+    tags: ["Web", "Registration", "Campaign"],
     source: "behance",
-    image: "/work/citizens-nyc.png",
+    image: "/work/citizens-website.png",
     chapters: [
       {
         label: "Challenge",
-        body: "What does it mean to be a New Yorker? Set Reset were tasked with creating the Data Portrait - an immersive large format animation exploring the data behind life in the Big Apple.",
-      },
-      {
-        label: "Approach",
-        body: "With the city grid as inspiration, we created a toolkit of geometric forms that could be multiplied and extrapolated as the story required, using a mixture of traditional visualisation and playful illustration. Three touchscreen kiosks provided opportunities for people to respond to the data through an interactive quiz.",
-      },
-      {
-        label: "Outcome",
-        body: "The Living Portrait of NYC exhibition ran from 18—27 September 2022 at Iron23, 29 W 23rd St, New York City. Awards: D&AD Graphite Pencil: Data Visualisation.",
+        // The Behance feed shows "?" where the dash is; restored as an em dash.
+        body: "“The Living Portrait of NYC” was an immersive, multi-sensory live in-person experience that ran for about 2 weeks. All promotions/advertising drove to a website where people can register for free to get a ticket. The site was a crucial centerpiece to their campaign — if people didn't register, they wouldn't come. Our South African team was tasked to bring this part of the full experience to life.",
       },
     ],
-    highlights: ["D&AD Graphite Pencil: Data Visualisation"],
   },
   {
     title: "Audi Driving Experience Booking Platform",
@@ -149,6 +150,157 @@ export const projects: Project[] = [
         body: "The campaign strategically encouraged people to share personalised thank-you messages, showcasing them on a dynamic map that visualised these acts in real time, fostering a sense of collective participation and social pride.",
       },
     ],
+  },
+  {
+    title: "Promise — Digital Positioning",
+    client: "Promise",
+    description: "Repositioning the Promise brand within the digital environment.",
+    href: "https://www.behance.net/gallery/54255749/Promise-Digital-Positioning",
+    tags: ["Brand", "Digital", "Positioning"],
+    source: "behance",
+    image: "/work/promise-positioning.png",
+  },
+  {
+    title: "KFC — Do you Speak Emoji? Challenge",
+    client: "KFC",
+    description:
+      "The “Do You Speak Emoji?” campaign by KFC South Africa was an innovative initiative celebrating World Emoji Day by engaging audiences through the universal language of emojis.",
+    href: "https://www.behance.net/gallery/212668425/KFC-Do-you-Speak-Emoji-Challenge",
+    tags: ["Campaign", "WhatsApp", "AI"],
+    source: "behance",
+    image: "/work/kfc-emoji.png",
+    chapters: [
+      {
+        label: "Approach",
+        body: "Integrating technology and humour, the campaign featured an AI-powered Emoji Translator on WhatsApp, allowing users to convert texts to emojis and vice versa with a KFC twist. It leveraged social media to amplify reach and incentivised participation with prizes, including KFC vouchers.",
+      },
+      {
+        label: "Outcome",
+        body: "With over 9.74 million impressions and thousands of interactions, the campaign showcased KFC's creativity and technological savvy while connecting with a digitally engaged audience in a playful, memorable way.",
+      },
+    ],
+    highlights: ["9.74 million+ impressions"],
+  },
+  {
+    title: "Colgate — Personalise Your Smile CRM",
+    client: "Colgate",
+    description:
+      "In an effort to deepen customer relationships and enhance engagement, Colgate-Palmolive launched a personalised CRM campaign centred around turning their toothpaste into a loyal, trustworthy friend.",
+    href: "https://www.behance.net/gallery/202685907/Colgate-Personalise-Your-Smile-CRM",
+    tags: ["CRM", "Email", "Salesforce"],
+    source: "behance",
+    image: "/work/colgate-smile.png",
+    chapters: [
+      {
+        label: "Approach",
+        body: "The project began with a phased approach to understanding individual oral healthcare concerns through in-mail interaction surveys, allowing for the collection of data to create customised healthcare programs. By segmenting users into tailored journeys, the campaign ensured that onboarding, profiling, and personalised email communications were relevant and timely, building a strong connection with each customer. To support this personalised approach, we developed living blueprints to manage and distribute all content options efficiently, feeding into Salesforce for seamless integration. Each email was crafted with consumer-relevant content, including tips, tricks, and product recommendations, fostering a non-intrusive, personalised experience.",
+      },
+    ],
+  },
+  {
+    title: "Cadbury — Homegrown Stories Collection",
+    client: "Cadbury",
+    description:
+      "Our campaign leveraged innovative mobile voice-to-text and voice note technology to make storytelling engaging and accessible to children.",
+    href: "https://www.behance.net/gallery/188848409/Cadbury-Homegrown-Stories-Collection",
+    tags: ["Campaign", "Voice", "Mobile"],
+    source: "behance",
+    image: "/work/cadbury-homegrown.png",
+    chapters: [
+      {
+        label: "Challenge",
+        body: "South Africa's history has negatively impacted our youth, with 31% of primary school children being illiterate. Moreover, only 2% of children's literature is available in languages other than English and Afrikaans, limiting access to culturally relevant stories.",
+      },
+      {
+        label: "Approach",
+        body: "By turning ordinary people into published authors, we not only enhanced our brand's meaning but also improved reading comprehension, proving that there's a “Glass & A Half” in everyone.",
+      },
+    ],
+  },
+  {
+    title: "Bestmed — Making Bestmed Better",
+    client: "Bestmed",
+    // The Behance feed cuts this lead off after its first sentence; only that
+    // complete sentence is used.
+    description:
+      "Bestmed have been providing quality healthcare to South Africans since 1964, boasting the most loyal customers at 70.6% (above industry par of 68.8%).",
+    href: "https://www.behance.net/gallery/153939793/Making-Bestmed-Better",
+    tags: ["UX", "Web", "Healthcare"],
+    source: "behance",
+    image: "/work/bestmed.png",
+  },
+  {
+    title: "Livinguard — Optimisation & Governance",
+    client: "Livinguard",
+    description:
+      "Livinguard is an innovative brand selling premium personal protective wearables geared toward changing people's lives.",
+    href: "https://www.behance.net/gallery/173411725/Livinguard-Optimisation-Governance",
+    tags: ["eCommerce", "Audit", "Web"],
+    source: "behance",
+    image: "/work/livinguard.jpg",
+    chapters: [
+      {
+        label: "Challenge",
+        body: "But their eCommerce presence failed to deliver this message. So we were tasked to audit it, make recommendations and then implement them.",
+      },
+      {
+        label: "Approach",
+        body: "Our plan was to create a coherent structure and consistent brand identity throughout the site.",
+      },
+    ],
+  },
+  {
+    title: "MMA SMARTIES — The Host-age Situation",
+    client: "MMA SMARTIES",
+    description:
+      "The MMA SMARTIES honours the most effective modern marketing in South Africa.",
+    href: "https://www.behance.net/gallery/134407621/The-Host-age-Situation",
+    tags: ["Campaign", "Awards", "Digital"],
+    source: "behance",
+    image: "/work/hostage-situation.png",
+    chapters: [
+      {
+        label: "Challenge",
+        body: "There wasn’t much time (+/- 10 days), nor a budget (+/- R 30k) to emphasize the fact that the awards were free to enter. We needed a simple digital idea that promoted excellence in a digital ecosystem.",
+      },
+      {
+        label: "Approach",
+        body: "So we decided to have heavy-weight CEO and CMO prospects (Our judging panel) hold the website domains of their creative agency counterparts for ransom until they entered the awards. A HOST-age situation... if you will.",
+      },
+    ],
+  },
+  {
+    title: "Social.Lab — Experience Design",
+    client: "Social.Lab",
+    // No Behance description could be retrieved; the lead is the project's
+    // Behance title. Replace it once the copy is available.
+    description: "Experience Design.",
+    href: "https://www.behance.net/gallery/137291811/SocialLab-Experience-Design",
+    tags: ["Experience design"],
+    source: "behance",
+    image: "/work/social-lab.png",
+  },
+  {
+    title: "Jabari — “Own it” Campaign",
+    client: "Jabari",
+    // Behance's archived page cuts this lead off ("Read More"); the real text
+    // is used up to the cut. Replace it once the full copy is available.
+    description:
+      "In order to appeal to young and creative hip-hop head audience, we created a platform for them to participate in the production and amplification…",
+    href: "https://www.behance.net/gallery/59750565/Jabaris-Own-it-Campaign",
+    tags: ["Music", "Hip hop", "UGC"],
+    source: "behance",
+    image: "/work/jabari-own-it.png",
+  },
+  {
+    title: "Renault — New Megane Digital Launch",
+    client: "Renault",
+    // Behance has only this line; the rest of the project is image captions.
+    description: "Digital launch campaign for the New RENAULT Megane.",
+    href: "https://www.behance.net/gallery/49861215/DIGITAL-LAUNCH-CAMPAIGN-New-RENAULT-Megane",
+    tags: ["Web design", "Web development", "Art direction"],
+    source: "behance",
+    image: "/work/renault-megane.jpg",
   },
   {
     title: "KeyboardLearner",
@@ -204,8 +356,8 @@ export const siteLinks = {
 };
 
 export const navItems = [
-  { label: "About", href: "#about" },
-  { label: "Capabilities", href: "#capabilities" },
   { label: "Work", href: "#work" },
+  { label: "Skills", href: "#skills" },
+  { label: "About", href: "#about" },
   { label: "Contact", href: "#contact" },
 ];
